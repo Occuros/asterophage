@@ -1,4 +1,5 @@
 mod player;
+mod world_grid;
 
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;
@@ -8,6 +9,7 @@ use bevy_vector_shapes::prelude::*;
 use bevy_editor_pls::prelude::*;
 use bevy_mod_picking::prelude::*;
 use crate::player::PlayerPlugin;
+use crate::world_grid::WorldGridPlugin;
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum AppState {
@@ -40,6 +42,7 @@ fn main() {
         .add_state::<AppState>()
         .add_systems(Startup, setup)
         .add_plugins(PlayerPlugin)
+        .add_plugins(WorldGridPlugin)
         .run();
 }
 

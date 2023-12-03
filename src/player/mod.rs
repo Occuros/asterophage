@@ -21,10 +21,10 @@ impl Plugin for PlayerPlugin {
                     shoot,
                     life_time_system,
                     bullet_collisions_system,
-                    increase_cell_score_on_click,
                 ).run_if(in_state(AppState::Game))
             )
-        // .add_system(paint_target.in_base_set(CoreSet::PostUpdate))
+            .add_systems(PostUpdate, update_cursor_system)
+            .add_systems(PostUpdate, paint_target)
         ;
     }
 }

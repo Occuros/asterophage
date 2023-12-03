@@ -5,6 +5,7 @@ use std::f32::consts::TAU;
 use crate::MainCamera;
 use crate::player::player_components::*;
 
+
 pub const PLAYER_SPEED: f32 = 2.0;
 
 pub fn spawn_player(
@@ -24,6 +25,28 @@ pub fn spawn_player(
         Collider::cuboid(0.25, 0.25, 0.25),
         Name::new("Player"),
     ));
+}
+
+
+pub fn update_cursor_system(
+    window_query: Query<&Window>,
+    camera_query: Query<(&Camera, &GlobalTransform), (With<Camera>, With<MainCamera>)>,
+    mut game_cursor: ResMut<GameCursor>,
+    spatial_query: SpatialQuery
+) {
+    let window = window_query.get_single().unwrap();
+    let (camera, camera_transform) = camera_query.get_single().unwrap();
+    game_cursor.ui_position = window.cursor_position();
+    if let Some(cursor_position) = window.cursor_position() {
+        let ray: Option<Ray> = camera.viewport_to_world(camera_transform, cursor_position);
+        let filter = SpatialQueryFilter::default();
+        if let Some(ray) = ray {
+            if let Some(hit) = spatial_query.cast_ray(ray.origin, ray.direction, f32::MAX, true, filter) {
+                let position = ray.origin + ray.direction * hit.time_of_impact;
+                game_cursor.world_position = Some(position);
+            }
+        }
+    }
 }
 
 pub fn move_player(
@@ -92,19 +115,20 @@ pub fn shoot(
     materials: ResMut<Assets<StandardMaterial>>,
     input: Res<Input<MouseButton>>,
     game_cursor: Res<GameCursor>,
-    player_query: Query<&Transform, With<Player>>,
+    player_query: Query<(Entity, &Transform), With<Player>>,
 ) {
     if game_cursor.world_position.is_none() {
         return;
     };
     let target = game_cursor.world_position.unwrap();
-    let player_transform = player_query.single();
+    let (player_entity, player_transform) = player_query.single();
     let target_position = Vec3::new(target.x, player_transform.translation.y, target.z);
     let result = player_transform.looking_at(target_position, Vec3::Y);
     if input.just_pressed(MouseButton::Left) {
         commands.spawn(BulletBundle::new(
             player_transform.translation,
             result.rotation,
+            Some(player_entity),
             meshes,
             materials,
         ));
@@ -126,32 +150,32 @@ pub fn life_time_system(
 
 pub fn bullet_collisions_system(
     mut commands: Commands,
-    bullet_query: Query<&Bullet>,
+    bullet_query: Query<(&Bullet, &Owner)>,
     mut collision_events: EventReader<CollisionStarted>,
 ) {
     for CollisionStarted(e1, e2) in collision_events.read() {
-        if let Ok(_) = bullet_query.get(*e1) {
-            commands.entity(*e1).despawn();
+        let bullet_other = if bullet_query.get(*e1).is_ok() {
+            Some((e1, e2))
+        } else if bullet_query.get(*e2).is_ok()  {
+            Some((e2, e1))
+        } else {
+            None
+        } ;
+        
+       if let Some((bullet_entity, other_entity)) = bullet_other {
+           let (_, owner)  = bullet_query.get(*bullet_entity).unwrap();
+            if let Some(owner_entity) = owner.entity {
+                if owner_entity == *other_entity {
+                    continue;
+                }
+            
+            commands.entity(*bullet_entity).despawn();
         }
-
-        if let Ok(_) = bullet_query.get(*e2) {
-            commands.entity(*e2).despawn();
-        }
+       }
     }
 }
 
-pub fn increase_cell_score_on_click(
-    input: Res<Input<MouseButton>>,
-    game_cursor: Res<GameCursor>,
-) {
-    if !input.just_pressed(MouseButton::Left) {
-        return;
-    };
-    if game_cursor.world_position.is_none() {
-        return;
-    }
 
-}
 
 
 pub fn move_light_system(

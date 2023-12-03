@@ -14,6 +14,11 @@ pub struct LifeTime{
     pub time_left: f32,
 }
 
+#[derive(Component, Default)]
+pub struct Owner {
+    pub entity: Option<Entity>,
+}
+
 #[derive(Bundle, Default)]
 pub struct BulletBundle {
     pbr_bundle: PbrBundle,
@@ -22,14 +27,18 @@ pub struct BulletBundle {
     rigid_body: RigidBody,
     velocity: LinearVelocity,
     life_time: LifeTime,
+    gravity: GravityScale,
+    owner: Owner,
 }
 
 impl BulletBundle {
     pub fn new(
         position: Vec3,
         rotation: Quat,
+        owner: Option<Entity>,
         mut meshes: ResMut<Assets<Mesh>>,
-        mut materials: ResMut<Assets<StandardMaterial>>,) -> BulletBundle {
+        mut materials: ResMut<Assets<StandardMaterial>>,
+        ) -> BulletBundle {
         let size = 0.1;
 
         let shape = shape::Icosphere {radius: size, subdivisions: 12};
@@ -46,6 +55,8 @@ impl BulletBundle {
             collider: Collider::ball(size),
             velocity: LinearVelocity(transform.forward() * 5.0),
             life_time: LifeTime{time_left: 5.0},
+            gravity: GravityScale(0.0),
+            owner: Owner {entity: owner},
             ..default()
         }
     }

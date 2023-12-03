@@ -22,6 +22,7 @@ bevy_turborand = "0.7.0"
 bevy_vector_shapes = "0.6.0"
 bevy_mod_billboard = { git = "https://github.com/robtfm/bevy_mod_billboard.git", branch = "bevy12" }
 bevy_screen_diagnostics = "0.4.0"
+dotenv = "0.15.0"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
