@@ -5,7 +5,6 @@ use crate::debug::debug_components::{CursorDebugTextEvent, DebugText};
 use crate::MainCamera;
 
 pub fn debug_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    info!("Setting up small debug");
     commands.spawn((
         // Create a TextBundle that has a Text with a single section.
         TextBundle::from_section(
@@ -50,7 +49,6 @@ pub fn change_debug_text_system(
     let mut text: Mut<'_, Text> = debut_text_q.single_mut();
 
     for event in debug_text_event.read() {
-        info!("we had an event");
         text.sections[0].value = event.text.to_owned();
     }
 

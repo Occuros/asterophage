@@ -17,8 +17,8 @@ impl Plugin for WorldGridPlugin {
             // .add_systems(Startup, debug_world_system)
             // .add_systems(Startup, debug_spawn_grid_positions)
             // .add_systems(Startup, gird_test_system.before(debug_spawn_grid_positions))
-            .add_systems(Update, update_grid_positions)
             .add_systems(Update, draw_grid)
+            .add_systems(Update, discover_world_system)
         ;
     }
 }
