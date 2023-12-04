@@ -1,5 +1,6 @@
 mod player;
 mod world_grid;
+mod debug;
 
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;
@@ -8,6 +9,7 @@ use bevy_turborand::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use bevy_editor_pls::prelude::*;
 use bevy_mod_picking::prelude::*;
+use crate::debug::SmallDebugPlugin;
 use crate::player::PlayerPlugin;
 use crate::world_grid::WorldGridPlugin;
 
@@ -43,6 +45,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_plugins(PlayerPlugin)
         .add_plugins(WorldGridPlugin)
+        .add_plugins(SmallDebugPlugin)
         .run();
 }
 

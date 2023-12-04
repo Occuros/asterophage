@@ -24,7 +24,7 @@ impl Plugin for PlayerPlugin {
                 ).run_if(in_state(AppState::Game))
             )
             .add_systems(PostUpdate, update_cursor_system)
-            .add_systems(PostUpdate, paint_target)
+            // .add_systems(PostUpdate, paint_target)
         ;
     }
 }
