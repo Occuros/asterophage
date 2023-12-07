@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug};
 
 use bevy::utils::HashMap;
 
@@ -13,18 +13,63 @@ pub struct GridPosition {
 pub enum GroundLayer {
     #[default]
     Empty,
-    Blood {
-        amount: i32
+    BloodResource  {
+       amount: i32
     },
-    YellowBile {
+    YellowBileResource {
         amount: i32,
     },
-    BlackBile {
+    BlackBileResource  {
         amount: i32,
     },
-    Phlegm {
+    PhlegmResource  {
         amount: i32,
     },
+}
+
+#[derive(Component, Default)]
+pub struct YellowBile {
+    pub amount: i32
+}
+
+#[derive(Bundle, Default)]
+pub struct YellowBileBundle {
+    pbr_bundle: PbrBundle,
+    yellow_bile: YellowBile,
+}
+
+impl YellowBileBundle {
+    pub fn mesh() -> Mesh {
+        let size = 0.1;
+        let shape = shape::Icosphere { radius: size, subdivisions: 12 };
+        Mesh::try_from(shape).unwrap()
+    }
+    pub fn color() -> Color {
+        Color::YELLOW
+    }
+
+    pub fn new(
+        position: Vec3,
+        rotation: Quat,
+        amount: i32,
+        mesh: Handle<Mesh>,
+        material: Handle<StandardMaterial>,
+    ) -> YellowBileBundle {
+
+        let transform = Transform::from_translation(position).with_rotation(rotation);
+        Self {
+            pbr_bundle: PbrBundle {
+                transform,
+                mesh: mesh,
+                material: material,
+                ..default()
+            },
+            yellow_bile: YellowBile {
+                amount
+            },
+            ..default()
+        }
+    }
 }
 
 #[derive(Hash, Eq, PartialEq, Default, Clone, Reflect)]
@@ -69,6 +114,14 @@ pub struct GridCursor {
     pub ui_position: Option<Vec2>,
     pub selected_cell: Option<Cell>,
     pub world_position: Option<Vec3>,
+}
+
+#[derive(Resource, Reflect, Default)]
+#[reflect(Resource)]
+pub struct ResourceNoiseSettings {
+    pub zoom_level: f32,
+    pub bile_level: f32,
+
 }
 
 #[derive(Resource, Reflect, Default)]

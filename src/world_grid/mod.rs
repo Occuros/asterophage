@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::world_grid::components::{Cell, GridPosition, WorldGrid};
+use crate::world_grid::components::{Cell, GridPosition, ResourceNoiseSettings, WorldGrid};
 use crate::world_grid::systems::*;
 
 pub mod components;
@@ -14,6 +14,10 @@ impl Plugin for WorldGridPlugin {
             .register_type::<Cell>()
             .register_type::<WorldGrid>()
             .insert_resource(WorldGrid::new( 0.25))
+            .insert_resource(ResourceNoiseSettings {
+                zoom_level: 0.02,
+                bile_level: 0.83,
+            })
             // .add_systems(Startup, debug_world_system)
             // .add_systems(Startup, debug_spawn_grid_positions)
             // .add_systems(Startup, gird_test_system.before(debug_spawn_grid_positions))
