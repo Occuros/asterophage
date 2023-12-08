@@ -1,6 +1,8 @@
 mod player;
 mod world_grid;
 mod debug;
+mod building;
+mod general;
 
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;
@@ -9,7 +11,10 @@ use bevy_turborand::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use bevy_editor_pls::prelude::*;
 use bevy_mod_picking::prelude::*;
+use crate::building::BuildingPlugin;
 use crate::debug::SmallDebugPlugin;
+use crate::general::GeneralPlugin;
+use crate::player::player_components::GameCursor;
 use crate::player::PlayerPlugin;
 use crate::world_grid::WorldGridPlugin;
 
@@ -31,20 +36,17 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(PhysicsPlugins::default())
-        .add_plugins(
-            DefaultPickingPlugins
-                .build()
-                .disable::<DebugPickingPlugin>(),
-        )
         .add_plugins(BillboardPlugin)
         .add_plugins(EditorPlugin::default())
         .add_plugins(ShapePlugin::default())
         .add_plugins(RngPlugin::default())
-        .add_plugins(bevy_framepace::FramepacePlugin)
+        // .add_plugins(bevy_framepace::FramepacePlugin)
         .add_state::<AppState>()
         .add_systems(Startup, setup)
+        .add_plugins(GeneralPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(WorldGridPlugin)
+        .add_plugins(BuildingPlugin)
         .add_plugins(SmallDebugPlugin)
         .run();
 }
@@ -60,14 +62,14 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(50.0).into()),
+            mesh: meshes.add(shape::Plane::from_size(1000.0).into()),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..default()
         },
         // PickableBundle::default(),
         // RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
         // OnPointer::<Over>::send_event::<DoSomethingComplex>(),
-        Collider::cuboid(25.0, 0.01, 25.0),
+        Collider::cuboid(1000.0, 0.01, 1000.0),
         RigidBody::Static,
         Name::new("Floor"),
     ));
@@ -121,9 +123,10 @@ fn setup(
             ..default()
         })
         .insert(MainCamera {})
-        .insert(
-            PickableBundle::default(), // Enable picking using this camera
-        );
+        // .insert(
+        //     PickableBundle::default(), // Enable picking using this camera
+        // )
+    ;
 }
 
 

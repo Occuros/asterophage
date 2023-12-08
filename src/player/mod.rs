@@ -11,7 +11,6 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(GameCursor::default())
             .add_systems(OnEnter(AppState::Game),spawn_player)
             .add_systems(
                 Update,(
@@ -23,7 +22,6 @@ impl Plugin for PlayerPlugin {
                     bullet_collisions_system,
                 ).run_if(in_state(AppState::Game))
             )
-            .add_systems(PostUpdate, update_cursor_system)
             // .add_systems(PostUpdate, paint_target)
         ;
     }

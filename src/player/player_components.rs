@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;
+use crate::world_grid::world_gird_components::GridPosition;
 
 #[derive(Component, Default)]
 pub struct Player {
@@ -66,4 +67,5 @@ impl BulletBundle {
 pub struct GameCursor {
     pub ui_position: Option<Vec2>,
     pub world_position: Option<Vec3>,
+    pub preview_entity: Option<Entity>,
 }
