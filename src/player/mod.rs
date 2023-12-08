@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use crate::AppState;
-use crate::player::player_components::GameCursor;
 use crate::player::player_systems::*;
 
 pub mod player_components;

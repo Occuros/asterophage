@@ -1,7 +1,6 @@
 use bevy::app::{App, Plugin, Startup, Update};
 use crate::debug::debug_components::CursorDebugTextEvent;
 use crate::debug::debug_systems::{change_debug_text_system, debug_setup};
-use crate::player::PlayerPlugin;
 
 use self::debug_systems::move_debug_text_system;
 

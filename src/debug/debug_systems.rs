@@ -1,8 +1,6 @@
-use std::fmt::Debug;
 use bevy::prelude::*;
 use bevy::ui::Val::Px;
-use crate::debug::debug_components::{CursorDebugTextEvent, DebugText};
-use crate::MainCamera;
+use crate::debug::debug_components::*;
 
 pub fn debug_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 use std::f32::consts::TAU;
+use bevy::input::mouse::MouseWheel;
 use crate::MainCamera;
 use crate::player::player_components::*;
 
@@ -65,11 +66,18 @@ pub fn move_player(
 pub fn move_camera_system(
     mut cameras: Query<&mut Transform, (With<Camera>, With<MainCamera>, Without<Player>)>,
     player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
+    mut mouse_wheel: EventReader<MouseWheel>,
+    mut zoom_level: Local<f32>
 ) {
+    for ev in mouse_wheel.read() {
+        *zoom_level += ev.y;
+    }
+    *zoom_level = zoom_level.clamp(10.0, 50.0);
+
     if let Ok(player_transform) = player_query.get_single() {
         for mut c in cameras.iter_mut() {
             let look_target = player_transform.translation - player_transform.forward() * 3.0
-                + player_transform.up() * 12.0;
+                + player_transform.up() * *zoom_level;
             c.translation = look_target;
             c.look_at(player_transform.translation, Vec3::Y);
         }
@@ -98,7 +106,7 @@ pub fn shoot(
     game_cursor: Res<GameCursor>,
     player_query: Query<(Entity, &Transform), With<Player>>,
 ) {
-    if game_cursor.world_position.is_none() {
+    if game_cursor.world_position.is_none() || game_cursor.preview_entity.is_some() {
         return;
     };
     let target = game_cursor.world_position.unwrap();
@@ -106,13 +114,14 @@ pub fn shoot(
     let target_position = Vec3::new(target.x, player_transform.translation.y, target.z);
     let result = player_transform.looking_at(target_position, Vec3::Y);
     if input.just_pressed(MouseButton::Left) {
-        commands.spawn(BulletBundle::new(
-            player_transform.translation,
-            result.rotation,
-            Some(player_entity),
-            meshes,
-            materials,
-        ));
+        // commands.spawn(BulletBundle::new(
+        //     player_transform.translation,
+        //     result.rotation,
+        //     Some(player_entity),
+        //     meshes,
+        //     materials,
+        // ));
+        Bullet::spawn(player_transform.translation, result.rotation, Some(player_entity), &mut commands, meshes, materials);
     }
 }
 

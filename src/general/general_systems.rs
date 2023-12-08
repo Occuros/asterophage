@@ -120,13 +120,12 @@ pub fn button_highlight_system(
             &Interaction,
             &mut BackgroundColor,
             &mut BorderColor,
-            &Children,
         ),
         (Changed<Interaction>, With<Button>),
     >,
     // mut text_query: Query<&mut Text>,
 ) {
-    for (interaction, mut color, mut border_color, children) in &mut interaction_query {
+    for (interaction, mut color, mut border_color) in &mut interaction_query {
         // let mut text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Pressed => {
@@ -204,6 +203,7 @@ pub fn building_ui_selection_system(
     }
 }
 
+
 pub fn move_building_preview_with_cursor_system(
     game_cursor: Res<GameCursor>,
     mut transform_q: Query<&mut Transform>,
@@ -228,3 +228,4 @@ pub fn remove_preview_building_system(
     commands.entity(game_cursor.preview_entity.unwrap()).despawn_recursive();
     game_cursor.preview_entity = None;
 }
+

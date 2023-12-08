@@ -1,8 +1,7 @@
 use std::time::Duration;
 use bevy::prelude::*;
 use bevy::prelude::TimerMode::Repeating;
-use crate::world_grid::world_gird_components::{GridPosition, GridRotation, GroundLayerType};
-use crate::world_grid::world_gird_components::SurfaceLayer::Building as SurfaceBuilding;
+use crate::world_grid::world_gird_components::*;
 
 
 #[derive(Default, Reflect)]

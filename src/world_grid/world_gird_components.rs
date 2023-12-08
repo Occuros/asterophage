@@ -1,13 +1,7 @@
-use std::f32::consts::TAU;
-use bevy::prelude::*;
-use std::fmt::{Debug};
-use std::ops;
-use std::time::Duration;
-use bevy::time::TimerMode::Repeating;
+use bevy::{prelude::*, utils::HashMap};
 use bevy_vector_shapes::prelude::*;
-use bevy::utils::HashMap;
-use bevy_xpbd_3d::parry::transformation::utils::transform;
-use bevy_xpbd_3d::prelude::Position;
+use std::ops;
+
 
 #[derive(Component, Reflect, Hash, Eq, PartialEq, Debug, Clone, Default, Copy)]
 pub struct GridPosition {
@@ -60,7 +54,7 @@ impl YellowBile {
         amount: i32,
         commands: &mut Commands,
         asset_server: &mut AssetServer,
-        mut shapes: &mut ShapeCommands,
+        mut _shapes: &mut ShapeCommands,
     ) -> Entity {
         // shapes.reset = true;
         // shapes.transform = Transform::from_translation(position + Vec3::Y * 0.01);
@@ -71,11 +65,16 @@ impl YellowBile {
         //     amount
         // });
         let model = asset_server.load("models/bile-node.glb#Scene0");
-        commands.spawn(SceneBundle {
+        commands.spawn((
+            SceneBundle {
             scene: model,
             transform: Transform::from_translation(position).with_rotation(rotation).with_scale(Vec3::splat(size)),
             ..default()
-        }).id()
+        }, 
+        YellowBile {
+            amount,
+        }
+    )).id()
     }
 }
 
@@ -136,10 +135,11 @@ impl WorldGrid {
         )
     }
 
+    #[allow(dead_code)]
     pub fn set_cell(&mut self, cell: Cell, position: GridPosition) {
         self.cells.insert(position, cell);
     }
-
+    #[allow(dead_code)]
     pub fn set_cell_at_world_position(&mut self, position: Vec3, cell: Cell) {
         let grid_position = self.get_grid_position_from_world_position(position);
         self.cells.insert(grid_position, cell);

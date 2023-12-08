@@ -1,14 +1,9 @@
-use std::cmp::max;
-use bevy::math::{Quat, quat, Vec2};
-use bevy::prelude::*;
-use bevy_mod_billboard::prelude::*;
-use crate::debug::debug_components::CursorDebugTextEvent;
-use std::f32::consts::TAU;
+use crate::player::player_components::{GameCursor, Player};
 use crate::world_grid::world_gird_components::*;
 use bevy_vector_shapes::prelude::*;
 use noisy_bevy::simplex_noise_2d_seeded;
-use crate::player::player_components::{GameCursor, Player};
-
+use std::f32::consts::TAU;
+use bevy::prelude::*;
 
 pub fn draw_grid(
     _commands: Commands,
@@ -17,7 +12,9 @@ pub fn draw_grid(
     game_cursor: Res<GameCursor>,
     player_q: Query<&Transform, With<Player>>,
 ) {
-    if player_q.get_single().is_err() { return; }
+    if player_q.get_single().is_err() {
+        return;
+    }
     let rotation = Quat::from_rotation_x(TAU * 0.25);
     painter.set_rotation(rotation);
     painter.thickness = 0.01;
@@ -36,15 +33,14 @@ pub fn draw_grid(
             let max_distance = (draw_distance - 5) as f32 * world_grid.grid_size;
             painter.hollow = !cell_selected;
             painter.color = if cell_selected {
-                let distance_x = 1.0 - (position.x - player_transform.translation.x).abs() / max_distance;
-                let distance_y = 1.0 - (position.z - player_transform.translation.z).abs() / max_distance;
-                let distance = distance_x.min(distance_y);
                 position.y += 0.1;
                 let grey_value = 0.6;
                 Color::rgba(grey_value, grey_value, grey_value, 0.3)
             } else {
-                let distance_x = 1.0 - (position.x - player_transform.translation.x).abs() / max_distance;
-                let distance_y = 1.0 - (position.z - player_transform.translation.z).abs() / max_distance;
+                let distance_x =
+                    1.0 - (position.x - player_transform.translation.x).abs() / max_distance;
+                let distance_y =
+                    1.0 - (position.z - player_transform.translation.z).abs() / max_distance;
                 let distance = distance_x.min(distance_y);
                 let grey_value = 0.8;
                 position.y += 0.001;
@@ -69,7 +65,10 @@ fn get_noise_value(grid_position: GridPosition, zoom_level: f32) -> f32 {
     let frequencies = vec![1.0, 0.5, 0.25];
     let mut combined_noise = 0.0;
     for f in &frequencies {
-        combined_noise += f * ((simplex_noise_2d_seeded(Vec2::new(f * x * zoom_level, f * y * zoom_level), *f) + 1.0) * 0.5)
+        combined_noise += f
+            * ((simplex_noise_2d_seeded(Vec2::new(f * x * zoom_level, f * y * zoom_level), *f)
+                + 1.0)
+                * 0.5)
     }
     combined_noise / frequencies.iter().sum::<f32>()
 }
@@ -78,18 +77,17 @@ pub fn discover_world_system(
     mut commands: Commands,
     mut painter: ShapePainter,
     mut world_grid: ResMut<WorldGrid>,
-    game_cursor: Res<GameCursor>,
     player_q: Query<&Transform, With<Player>>,
     mut asset_server: ResMut<AssetServer>,
     resource_settings: Res<ResourceNoiseSettings>,
     mut shapes: ShapeCommands,
 ) {
-    if player_q.get_single().is_err() { return; }
+    if player_q.get_single().is_err() {
+        return;
+    }
     let rotation = Quat::from_rotation_x(TAU * 0.25);
     painter.set_rotation(rotation);
     painter.thickness = 0.01;
-    let cursor_grid_position = world_grid
-        .get_grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
 
     let player_transform = player_q.single();
     let center = world_grid.get_grid_position_from_world_position(player_transform.translation);
@@ -100,22 +98,36 @@ pub fn discover_world_system(
             let grid_position = GridPosition { x, y };
 
             if world_grid.cells.get(&grid_position).is_none() {
-                if get_noise_value(grid_position, resource_settings.zoom_level) > resource_settings.bile_level {
+                if get_noise_value(grid_position, resource_settings.zoom_level)
+                    > resource_settings.bile_level
+                {
                     let position = world_grid.grid_to_world(&grid_position);
-                    YellowBile::spawn(position, Quat::default(), world_grid.grid_size, 100, &mut commands, &mut asset_server, &mut shapes);
-                    world_grid.cells.insert(grid_position, Cell {
-                        ground_layer: GroundLayerType::YellowBileResource,
-                        surface_layer: SurfaceLayer::Empty,
-                    });
-                }else {
-                    world_grid.cells.insert(grid_position, Cell {
-                        ground_layer: GroundLayerType::Empty,
-                        surface_layer: SurfaceLayer::Empty,
-                    });
+                    YellowBile::spawn(
+                        position,
+                        Quat::default(),
+                        world_grid.grid_size,
+                        100,
+                        &mut commands,
+                        &mut asset_server,
+                        &mut shapes,
+                    );
+                    world_grid.cells.insert(
+                        grid_position,
+                        Cell {
+                            ground_layer: GroundLayerType::YellowBileResource,
+                            surface_layer: SurfaceLayer::Empty,
+                        },
+                    );
+                } else {
+                    world_grid.cells.insert(
+                        grid_position,
+                        Cell {
+                            ground_layer: GroundLayerType::Empty,
+                            surface_layer: SurfaceLayer::Empty,
+                        },
+                    );
                 }
-                
             }
         }
     }
 }
-

@@ -10,11 +10,9 @@ use bevy_mod_billboard::prelude::*;
 use bevy_turborand::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use bevy_editor_pls::prelude::*;
-use bevy_mod_picking::prelude::*;
 use crate::building::BuildingPlugin;
 use crate::debug::SmallDebugPlugin;
 use crate::general::GeneralPlugin;
-use crate::player::player_components::GameCursor;
 use crate::player::PlayerPlugin;
 use crate::world_grid::WorldGridPlugin;
 
