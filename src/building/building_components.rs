@@ -39,7 +39,7 @@ impl Building {
                 commands,
                 asset_server,
             )),
-            BuildingTypes::ConveyorBelt => Some(BeltPiece::spawn(position, rotation, size, commands, shapes)),
+            BuildingTypes::ConveyorBelt => Some(BeltElement::spawn(position, rotation, size, commands, shapes)),
         }
     }
 }
@@ -94,12 +94,13 @@ impl Extractor {
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-pub struct BeltPiece {
+pub struct BeltElement {
     pub exit_direction: GridPosition,
     pub speed: f32,
+    pub conveyor_belt: Option<Entity>,
 }
 
-impl BeltPiece {
+impl BeltElement {
     pub fn spawn(
         position: Vec3,
         rotation: Quat,
@@ -128,6 +129,8 @@ impl BeltPiece {
                 shapes.thickness = 0.01;
                 shapes.color = Color::YELLOW.pastel();
                 shapes.ngon(3.0, 0.2);
+                shapes.translate(Vec3::Y * -0.15);
+                shapes.rect(Vec2::new(0.1, 0.3));
             })
             .id();
 
@@ -140,5 +143,5 @@ impl BeltPiece {
 pub struct CompleteConveryorBelt {
     pub start_position: GridPosition,
     pub end_position: GridPosition,
-    pub belt_pieces: Vec<BeltPiece>,
+    pub belt_pieces: Vec<BeltElement>,
 }

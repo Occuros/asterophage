@@ -1,7 +1,7 @@
 use crate::building::building_systems::*;
 use bevy::prelude::*;
 
-use self::building_components::{Building, Extractor, BeltPiece, CompleteConveryorBelt};
+use self::building_components::{Building, Extractor, BeltElement, CompleteConveryorBelt};
 
 pub mod building_components;
 mod building_systems;
@@ -13,7 +13,7 @@ impl Plugin for BuildingPlugin {
         app
         .register_type::<Building>()
         .register_type::<Extractor>()
-        .register_type::<BeltPiece>()
+        .register_type::<BeltElement>()
         .register_type::<CompleteConveryorBelt>()
             .add_systems(Update, place_building_system)
             // .add_systems(Update, test_place_building_system)

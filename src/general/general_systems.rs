@@ -1,3 +1,5 @@
+use std::f32::consts::TAU;
+
 use bevy::asset::AssetServer;
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::{SpatialQuery, SpatialQueryFilter};
@@ -5,8 +7,9 @@ use crate::building::building_components::*;
 use crate::general::general_components::BuildingButton;
 use crate::MainCamera;
 use crate::player::player_components::GameCursor;
-use crate::world_grid::world_gird_components::WorldGrid;
+use crate::world_grid::world_gird_components::*;
 use bevy_vector_shapes::prelude::*;
+
 
 
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
@@ -261,5 +264,20 @@ pub fn remove_preview_building_system(
     if game_cursor.preview_entity.is_none() {return;}
     commands.entity(game_cursor.preview_entity.unwrap()).despawn_recursive();
     game_cursor.preview_entity = None;
+}
+
+pub fn rotate_preview_item_system(
+    game_cursor: Res<GameCursor>,
+    input: Res<Input<KeyCode>>,
+    mut tranform_q: Query<&mut Transform>,
+) {
+    if !input.just_pressed(KeyCode::R) {return;}
+    if game_cursor.preview_entity.is_none() {return;}
+
+    let mut transform = tranform_q.get_mut(game_cursor.preview_entity.unwrap()).unwrap();
+
+    transform.rotate_y(-TAU * 0.25);
+    info!("piece is rotated {:?}", transform.grid_rotation());
+
 }
 

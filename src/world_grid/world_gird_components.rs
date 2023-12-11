@@ -1,7 +1,6 @@
 use bevy::{prelude::*, utils::HashMap};
 use bevy_vector_shapes::prelude::*;
-use std::ops;
-
+use std::{f32::consts::TAU, f32::consts::PI, ops};
 
 #[derive(Component, Reflect, Hash, Eq, PartialEq, Debug, Clone, Default, Copy)]
 pub struct GridPosition {
@@ -35,16 +34,42 @@ pub struct YellowBile {
     pub amount: i32,
 }
 
-#[derive(Reflect, Default)]
+#[derive(Reflect, Default, Debug)]
 pub enum GridRotation {
     #[default]
     N,
     S,
     W,
-    E
+    E,
 }
 
+pub trait GridPiece {
+    fn grid_rotation(&self) -> GridRotation;
+}
 
+impl GridPiece for Transform {
+    fn grid_rotation(&self) -> GridRotation {
+
+        let mut y_rotation = self.rotation.to_euler(EulerRot::YXZ).0;
+
+        y_rotation = (y_rotation + TAU) % TAU;
+
+        const NORTH: f32 = PI / 4.0;
+        const WEST: f32 = 3.0 * PI / 4.0;
+        const SOUTH: f32 = 5.0 * PI / 4.0;
+        const EAST: f32 = 7.0 * PI / 4.0;
+
+        if  y_rotation < NORTH || y_rotation >= EAST {
+            GridRotation::N
+        } else if y_rotation < WEST {
+            GridRotation::W
+        } else if y_rotation < SOUTH {
+            GridRotation::S
+        } else {
+            GridRotation::E
+        }
+    }
+}
 
 impl YellowBile {
     pub fn spawn(
@@ -65,34 +90,34 @@ impl YellowBile {
         //     amount
         // });
         let model = asset_server.load("models/bile-node.glb#Scene0");
-        commands.spawn((
-            SceneBundle {
-            scene: model,
-            transform: Transform::from_translation(position).with_rotation(rotation).with_scale(Vec3::splat(size)),
-            ..default()
-        }, 
-        YellowBile {
-            amount,
-        }
-    )).id()
+        commands
+            .spawn((
+                SceneBundle {
+                    scene: model,
+                    transform: Transform::from_translation(position)
+                        .with_rotation(rotation)
+                        .with_scale(Vec3::splat(size)),
+                    ..default()
+                },
+                YellowBile { amount },
+            ))
+            .id()
     }
 }
-
-
 
 #[derive(Hash, Eq, PartialEq, Default, Clone, Reflect, Debug)]
 pub enum SurfaceLayer {
     #[default]
     Empty,
     CiliaBelt {
-        entity: Entity
+        entity: Entity,
     },
     Building {
-        entity: Entity
+        entity: Entity,
     },
     Resource {
-        entity: Entity
-    }
+        entity: Entity,
+    },
 }
 
 #[derive(Hash, Eq, PartialEq, Default, Clone, Reflect, Debug)]
@@ -109,14 +134,11 @@ pub struct Cell {
     pub item_layer: ItemLayer,
 }
 
-
-
 #[derive(Resource, Reflect, Default)]
 #[reflect(Resource)]
 pub struct ResourceNoiseSettings {
     pub zoom_level: f32,
     pub bile_level: f32,
-
 }
 
 #[derive(Resource, Reflect, Default)]
@@ -129,10 +151,7 @@ pub struct WorldGrid {
 impl WorldGrid {
     pub fn new(grid_size: f32) -> WorldGrid {
         let cells = HashMap::<GridPosition, Cell>::new();
-        Self {
-            cells,
-            grid_size,
-        }
+        Self { cells, grid_size }
     }
 
     pub fn grid_to_world(&self, grid_position: &GridPosition) -> Vec3 {
