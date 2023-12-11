@@ -116,6 +116,7 @@ pub fn discover_world_system(
                         Cell {
                             ground_layer: GroundLayerType::YellowBileResource,
                             surface_layer: SurfaceLayer::Empty,
+                            item_layer: ItemLayer::Empty,
                         },
                     );
                 } else {
@@ -124,6 +125,7 @@ pub fn discover_world_system(
                         Cell {
                             ground_layer: GroundLayerType::Empty,
                             surface_layer: SurfaceLayer::Empty,
+                            item_layer: ItemLayer::Empty,
                         },
                     );
                 }

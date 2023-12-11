@@ -96,9 +96,17 @@ pub enum SurfaceLayer {
 }
 
 #[derive(Hash, Eq, PartialEq, Default, Clone, Reflect, Debug)]
+pub enum ItemLayer {
+    #[default]
+    Empty,
+    YellowBileItem,
+}
+
+#[derive(Hash, Eq, PartialEq, Default, Clone, Reflect, Debug)]
 pub struct Cell {
     pub ground_layer: GroundLayerType,
     pub surface_layer: SurfaceLayer,
+    pub item_layer: ItemLayer,
 }
 
 

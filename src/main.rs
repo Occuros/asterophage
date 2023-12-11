@@ -3,6 +3,7 @@ mod world_grid;
 mod debug;
 mod building;
 mod general;
+pub mod utilities;
 
 use bevy::prelude::*;
 use bevy_xpbd_3d::prelude::*;

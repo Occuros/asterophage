@@ -6,6 +6,7 @@ use crate::general::general_components::BuildingButton;
 use crate::MainCamera;
 use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::WorldGrid;
+use bevy_vector_shapes::prelude::*;
 
 
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
@@ -33,7 +34,7 @@ pub fn setup_menu(
             parent
                 .spawn(NodeBundle {
                     style: Style {
-                        width: Val::Px(200.),
+                        width: Val::Px(100.),
                         border: UiRect::all(Val::Px(2.)),
                         justify_content: JustifyContent::Center,
                         ..default()
@@ -48,6 +49,7 @@ pub fn setup_menu(
                             style: Style {
                                 width: Val::Percent(100.),
                                 flex_direction: FlexDirection::Column,
+                                // justify_content: JustifyContent::FlexStart,
                                 ..default()
                             },
                             background_color: Color::rgb(0.15, 0.15, 0.15).into(),
@@ -68,7 +70,7 @@ pub fn setup_menu(
                                     "Build Menu",
                                     TextStyle {
                                         font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                                        font_size: 30.0,
+                                        font_size: 20.0,
                                         ..default()
                                     },
                                 )
@@ -86,7 +88,7 @@ pub fn setup_menu(
                                     style: Style {
                                         width: Val::Px(50.),
                                         height: Val::Px(50.0),
-                                        border: UiRect::all(Val::Px(5.0)),
+                                        border: UiRect::all(Val::Px(1.0)),
                                         // horizontally center child text
                                         justify_content: JustifyContent::Center,
                                         // vertically center child text
@@ -103,6 +105,36 @@ pub fn setup_menu(
                                 .with_children(|parent| {
                                     parent.spawn(TextBundle::from_section(
                                         "Extractor",
+                                        TextStyle {
+                                            font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                                            font_size: 10.0,
+                                            color: Color::rgb(0.9, 0.9, 0.9),
+                                        },
+                                    ));
+                                });
+                            
+                                parent
+                                .spawn(ButtonBundle {
+                                    style: Style {
+                                        width: Val::Px(50.),
+                                        height: Val::Px(50.0),
+                                        border: UiRect::all(Val::Px(1.0)),
+                                        // horizontally center child text
+                                        justify_content: JustifyContent::Center,
+                                        // vertically center child text
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    border_color: BorderColor(Color::BLACK),
+                                    background_color: NORMAL_BUTTON.into(),
+                                    ..default()
+                                })
+                                .insert(BuildingButton {
+                                    building_type: BuildingTypes::ConveyorBelt,
+                                })
+                                .with_children(|parent| {
+                                    parent.spawn(TextBundle::from_section(
+                                        "Belt",
                                         TextStyle {
                                             font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                                             font_size: 10.0,
@@ -181,6 +213,7 @@ pub fn building_ui_selection_system(
     >,
    mut game_cursor: ResMut<GameCursor>,
    world_grid: Res<WorldGrid>,
+   mut shapes: ShapeCommands,
 ) {
     for (interaction, building_button) in &mut interaction_query {
         // let mut text = text_query.get_mut(children[0]).unwrap();
@@ -191,14 +224,15 @@ pub fn building_ui_selection_system(
                }
             }
 
-            match building_button.building_type {
-                BuildingTypes::Extractor => {
-                    let extractor_entity = Extractor::spawn(game_cursor.world_position.unwrap_or_default(), Quat::default(), world_grid.grid_size, &mut commands, &mut asset_server);
-                    commands.entity(extractor_entity).insert(Name::new("ExtractorPreview".to_owned()));
-                    game_cursor.preview_entity = Some(extractor_entity);
-                }
-                _ => info!("Building Not Yet Implemented"),
-            }
+            game_cursor.preview_entity = Building::spawn(
+                building_button.building_type, 
+                game_cursor.world_position.unwrap_or_default(), 
+                Quat::default(), 
+                world_grid.grid_size, 
+                &mut commands, 
+                &mut asset_server, 
+                &mut shapes
+            );
         }
     }
 }
