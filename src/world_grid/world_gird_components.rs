@@ -8,6 +8,57 @@ pub struct GridPosition {
     pub y: i32,
 }
 
+impl GridPosition {
+    #[allow(dead_code)]
+    pub fn get_neighbour(&self, direction: GridRotation) -> GridPosition {
+        match direction {
+            GridRotation::N => GridPosition {x: self.x, y: self.y + 1},
+            GridRotation::S => GridPosition {x: self.x, y: self.y - 1},
+            GridRotation::W => GridPosition {x: self.x -1, y: self.y},
+            GridRotation::E => GridPosition {x: self.x + 1, y: self.y},
+        }
+    } 
+
+    pub fn get_relative_forward(&self, rotation: GridRotation) -> GridPosition {
+        match rotation {
+            GridRotation::N => GridPosition {x: self.x, y: self.y + 1},
+            GridRotation::S => GridPosition {x: self.x, y: self.y - 1},
+            GridRotation::W => GridPosition {x: self.x + 1, y: self.y},
+            GridRotation::E => GridPosition {x: self.x - 1, y: self.y},
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn get_relative_back(&self, rotation: GridRotation) -> GridPosition {
+        match rotation {
+            GridRotation::N => GridPosition {x: self.x, y: self.y - 1},
+            GridRotation::S => GridPosition {x: self.x, y: self.y + 1},
+            GridRotation::W => GridPosition {x: self.x - 1, y: self.y},
+            GridRotation::E => GridPosition {x: self.x + 1, y: self.y},
+        }
+    }
+    #[allow(dead_code)]
+    pub fn get_relative_left(&self, rotation: GridRotation) -> GridPosition {
+        match rotation {
+            GridRotation::N => GridPosition {x: self.x + 1 , y: self.y},
+            GridRotation::S => GridPosition {x: self.x - 1, y: self.y},
+            GridRotation::W => GridPosition {x: self.x, y: self.y - 1},
+            GridRotation::E => GridPosition {x: self.x, y: self.y + 1},
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn get_relative_right(&self, rotation: GridRotation) -> GridPosition {
+        match rotation {
+            GridRotation::N => GridPosition {x: self.x - 1 , y: self.y},
+            GridRotation::S => GridPosition {x: self.x + 1, y: self.y},
+            GridRotation::W => GridPosition {x: self.x, y: self.y + 1},
+            GridRotation::E => GridPosition {x: self.x, y: self.y - 1},
+        }
+    }
+
+}
+
 impl ops::Add<GridPosition> for GridPosition {
     type Output = GridPosition;
 
@@ -34,13 +85,57 @@ pub struct YellowBile {
     pub amount: i32,
 }
 
-#[derive(Reflect, Default, Debug)]
+#[derive(Reflect, Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GridRotation {
     #[default]
     N,
     S,
     W,
     E,
+}
+
+impl GridRotation {
+    pub fn difference(&self, other: GridRotation) -> i32 {
+        match (self, other) {
+            (GridRotation::N, GridRotation::N) => 0,
+            (GridRotation::N, GridRotation::S) => 2,
+            (GridRotation::N, GridRotation::W) => 1,
+            (GridRotation::N, GridRotation::E) => 1,
+            (GridRotation::S, GridRotation::N) => 2,
+            (GridRotation::S, GridRotation::S) => 0,
+            (GridRotation::S, GridRotation::W) => 1,
+            (GridRotation::S, GridRotation::E) => 1,
+            (GridRotation::W, GridRotation::N) => 1,
+            (GridRotation::W, GridRotation::S) => 1,
+            (GridRotation::W, GridRotation::W) => 0,
+            (GridRotation::W, GridRotation::E) => 2,
+            (GridRotation::E, GridRotation::N) => 1,
+            (GridRotation::E, GridRotation::S) => 1,
+            (GridRotation::E, GridRotation::W) => 2,
+            (GridRotation::E, GridRotation::E) => 0,
+        }
+    }
+    #[allow(dead_code)]
+    pub fn get_relative_rotation(&self, other: GridRotation) -> GridRotation {
+        match (self, other) {
+            (GridRotation::N, GridRotation::N) => GridRotation::N,
+            (GridRotation::N, GridRotation::S) => GridRotation::N,
+            (GridRotation::N, GridRotation::W) => GridRotation::N,
+            (GridRotation::N, GridRotation::E) => GridRotation::N,
+            (GridRotation::S, GridRotation::N) => GridRotation::S,
+            (GridRotation::S, GridRotation::S) => GridRotation::N,
+            (GridRotation::S, GridRotation::W) => GridRotation::E,
+            (GridRotation::S, GridRotation::E) => GridRotation::W,
+            (GridRotation::W, GridRotation::N) => GridRotation::W,
+            (GridRotation::W, GridRotation::S) => GridRotation::E,
+            (GridRotation::W, GridRotation::W) => GridRotation::S,
+            (GridRotation::W, GridRotation::E) => GridRotation::N,
+            (GridRotation::E, GridRotation::N) => GridRotation::E,
+            (GridRotation::E, GridRotation::S) => GridRotation::W,
+            (GridRotation::E, GridRotation::W) => GridRotation::N,
+            (GridRotation::E, GridRotation::E) => GridRotation::S,
+        }
+    }
 }
 
 pub trait GridPiece {
@@ -109,9 +204,9 @@ impl YellowBile {
 pub enum SurfaceLayer {
     #[default]
     Empty,
-    CiliaBelt {
-        entity: Entity,
-    },
+    // CiliaBelt {
+    //     entity: Entity,
+    // },
     Building {
         entity: Entity,
     },
@@ -177,4 +272,14 @@ impl WorldGrid {
         let y = ((position.z + self.grid_size * 0.5) / self.grid_size).floor() as i32;
         GridPosition { x, y }
     }
+
+    #[allow(dead_code)]
+    pub fn get_cell(&mut self, grid_position: &GridPosition) -> &Cell {
+        if !self.cells.contains_key(grid_position) {
+            self.cells.insert(*grid_position, Cell::default());
+        }
+        return &self.cells[grid_position];
+    }
+
+   
 }

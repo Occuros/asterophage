@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy::ui::Val::Px;
 use crate::debug::debug_components::*;
+use crate::player::player_components::GameCursor;
+use crate::world_grid::world_gird_components::WorldGrid;
 
 pub fn debug_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
@@ -26,6 +28,17 @@ pub fn debug_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 }
 
+pub fn cursor_position_debug_system(
+    game_cursor: Res<GameCursor>,
+    mut debug_text_event: EventWriter<CursorDebugTextEvent>,
+    world_grid: Res<WorldGrid>,
+) {
+    let position = world_grid.get_grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
+    debug_text_event.send(CursorDebugTextEvent{
+        text: format!("x:{} y:{} => {:.2?}", position.x, position.y, game_cursor.world_position.unwrap_or_default()),
+    });
+}
+
 pub fn move_debug_text_system
 (
     window_query: Query<&Window>,
@@ -49,5 +62,4 @@ pub fn change_debug_text_system(
     for event in debug_text_event.read() {
         text.sections[0].value = event.text.to_owned();
     }
-
 }

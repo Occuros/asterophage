@@ -1,6 +1,6 @@
 use bevy::app::{App, Plugin, Startup, Update};
 use crate::debug::debug_components::CursorDebugTextEvent;
-use crate::debug::debug_systems::{change_debug_text_system, debug_setup};
+use crate::debug::debug_systems::*;
 
 use self::debug_systems::move_debug_text_system;
 
@@ -16,6 +16,7 @@ impl Plugin for SmallDebugPlugin {
             .add_systems(Startup, debug_setup)
             .add_systems(Update, move_debug_text_system)
             .add_systems(Update, change_debug_text_system)
+            .add_systems(Update, cursor_position_debug_system)
             ;
     }
 }

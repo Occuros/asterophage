@@ -41,16 +41,16 @@ pub fn move_player(
 
     if let Ok((mut transform, mut player)) = player_query.get_single_mut() {
         if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
-            direction += Vec3::new(-1.0, 0.0, 0.0);
+            direction += Vec3::X;
         }
         if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
-            direction += Vec3::new(1.0, 0.0, 0.0);
+            direction -= Vec3::X;
         }
         if keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) {
-            direction += Vec3::new(0.0, 0.0, -1.0);
+            direction += Vec3::Z;
         }
         if keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) {
-            direction += Vec3::new(0.0, 0.0, 1.0);
+            direction -= Vec3::Z;
         }
 
         if direction.length_squared() > 0.0 {
@@ -80,6 +80,7 @@ pub fn move_camera_system(
                 + player_transform.up() * *zoom_level;
             c.translation = look_target;
             c.look_at(player_transform.translation, Vec3::Y);
+            c.rotate_around(player_transform.translation, Quat::from_rotation_y(TAU * 0.5))
         }
     }
 }

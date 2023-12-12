@@ -103,7 +103,7 @@ pub fn setup_menu(
                                     ..default()
                                 })
                                 .insert(BuildingButton {
-                                    building_type: BuildingTypes::Extractor,
+                                    building_type: BuildingType::Extractor,
                                 })
                                 .with_children(|parent| {
                                     parent.spawn(TextBundle::from_section(
@@ -133,7 +133,7 @@ pub fn setup_menu(
                                     ..default()
                                 })
                                 .insert(BuildingButton {
-                                    building_type: BuildingTypes::ConveyorBelt,
+                                    building_type: BuildingType::ConveyorBelt,
                                 })
                                 .with_children(|parent| {
                                     parent.spawn(TextBundle::from_section(

@@ -7,22 +7,30 @@ use std::f32::consts::TAU;
 use std::time::Duration;
 
 #[derive(Default, Reflect, Clone, Copy)]
-pub enum BuildingTypes {
+pub enum BuildingType {
     #[default]
     None,
     Extractor,
     ConveyorBelt,
 }
 
+#[derive(Event)]
+pub struct BuildingPlacedEvent {
+    pub building_type: BuildingType,
+    pub grid_position: GridPosition,
+    pub grid_rotation: GridRotation,
+    pub entity: Entity,
+}
+
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Building {
-    pub building_type: BuildingTypes,
+    pub building_type: BuildingType,
 }
 
 impl Building {
     pub fn spawn(
-        building_type: BuildingTypes,
+        building_type: BuildingType,
         position: Vec3,
         rotation: Quat,
         size: f32,
@@ -31,15 +39,17 @@ impl Building {
         shapes: &mut ShapeCommands,
     ) -> Option<Entity> {
         match building_type {
-            BuildingTypes::None => None,
-            BuildingTypes::Extractor => Some(Extractor::spawn(
+            BuildingType::None => None,
+            BuildingType::Extractor => Some(Extractor::spawn(
                 position,
                 rotation,
                 size,
                 commands,
                 asset_server,
             )),
-            BuildingTypes::ConveyorBelt => Some(BeltElement::spawn(position, rotation, size, commands, shapes)),
+            BuildingType::ConveyorBelt => Some(BeltElement::spawn(
+                position, rotation, size, commands, shapes,
+            )),
         }
     }
 }
@@ -74,7 +84,7 @@ impl Extractor {
                     ..default()
                 },
                 Building {
-                    building_type: BuildingTypes::Extractor,
+                    building_type: BuildingType::Extractor,
                 },
                 Extractor {
                     timer: Timer::new(Duration::from_secs_f32(1.0), Repeating),
@@ -95,7 +105,6 @@ impl Extractor {
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct BeltElement {
-    pub exit_direction: GridPosition,
     pub speed: f32,
     pub conveyor_belt: Option<Entity>,
 }
@@ -108,6 +117,7 @@ impl BeltElement {
         commands: &mut Commands,
         shapes: &mut ShapeCommands,
     ) -> Entity {
+    
         let entity = commands
             .spawn((
                 SpatialBundle {
@@ -116,16 +126,21 @@ impl BeltElement {
                         .with_scale(Vec3::splat(scale)),
                     ..default()
                 },
+                BeltElement {
+                    conveyor_belt: None,
+                    speed: 1.0, 
+                },
                 Building {
-                    building_type: BuildingTypes::ConveyorBelt,
+                    building_type: BuildingType::ConveyorBelt,
                 },
                 Name::new("Belt Piece"),
             ))
             .with_shape_children(&shapes.config(), |shapes| {
                 shapes.hollow = true;
                 shapes.transform = Transform::from_rotation(
-                    Quat::from_rotation_x(TAU * 0.25) * Quat::from_rotation_z(TAU * 0.50),
-                ).with_translation(Vec3::Y * 0.01);
+                    Quat::from_rotation_y(TAU * 0.25) * Quat::from_rotation_x(TAU * 0.25) * Quat::from_rotation_z(TAU * 0.25),
+                )
+                .with_translation(Vec3::Y * 0.01);
                 shapes.thickness = 0.01;
                 shapes.color = Color::YELLOW.pastel();
                 shapes.ngon(3.0, 0.2);
@@ -133,6 +148,7 @@ impl BeltElement {
                 shapes.rect(Vec2::new(0.1, 0.3));
             })
             .id();
+
 
         entity
     }
@@ -143,5 +159,23 @@ impl BeltElement {
 pub struct CompleteConveryorBelt {
     pub start_position: GridPosition,
     pub end_position: GridPosition,
-    pub belt_pieces: Vec<BeltElement>,
+    pub belt_pieces: Vec<BeltPiece>,
+}
+
+impl CompleteConveryorBelt {
+    pub fn spawn_new(commands: &mut Commands, belt_piece: BeltPiece) -> Entity {
+        let conveyor_belt_entity = commands.spawn_empty().insert(CompleteConveryorBelt {
+            start_position: belt_piece.grid_position,
+            end_position: belt_piece.grid_position,
+            belt_pieces: vec![belt_piece],
+        }).id();
+        conveyor_belt_entity
+    }
+}
+
+#[derive(Reflect, Clone, Copy)]
+pub struct BeltPiece {
+    pub entity: Entity,
+    pub direction: GridRotation,
+    pub grid_position: GridPosition,
 }
