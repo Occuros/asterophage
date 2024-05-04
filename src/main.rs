@@ -40,7 +40,7 @@ fn main() {
         .add_plugins(ShapePlugin::default())
         .add_plugins(RngPlugin::default())
         // .add_plugins(bevy_framepace::FramepacePlugin)
-        .add_state::<AppState>()
+        .init_state::<AppState>()
         .add_systems(Startup, setup)
         .add_plugins(GeneralPlugin)
         .add_plugins(PlayerPlugin)
@@ -56,13 +56,14 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut ambient_light: ResMut<AmbientLight>,
     mut rng: ResMut<GlobalRng>,
 ) {
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(1000.0).into()),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            mesh: meshes.add(Plane3d::default().mesh().size(1000.0, 1000.0)),
+            material: materials.add(StandardMaterial::from(Color::rgb(0.3, 0.5, 0.3))),
             ..default()
         },
         // PickableBundle::default(),
@@ -86,7 +87,7 @@ fn setup(
         commands.spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 0.50 })),
-                material: materials.add(Color::rgb(0.8, rng.f32(), 0.6).into()),
+                material: materials.add(Color::rgb(0.8, rng.f32(), 0.6)),
                 transform: Transform::from_translation(position),
                 ..default()
             },
@@ -102,13 +103,29 @@ fn setup(
     // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0 * 2.0,
+            intensity: 1_000_000.0 * 0.5,
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        transform: Transform::from_xyz(4.0, 20.0, 4.0),
         ..default()
     });
+    // 
+    // ambient_light.brightness = 120.0;
+
+    // 199, 212, 255, 255
+    // commands.spawn(DirectionalLightBundle {
+    //     directional_light: DirectionalLight {
+    //         shadows_enabled: true,
+    //         illuminance: 5_000.0,
+    //         // color: Color::rgb(199.0/255.0, 212.0/255.0, 1.0),
+    //         ..default()
+    //     },
+    //     
+    //     transform: Transform::from_xyz(0.0, 120.0, -120.0).looking_at(Vec3::ZERO, Vec3::Y),
+    // 
+    //     ..default()
+    // });
 
 
 

@@ -77,7 +77,7 @@ impl CloneEntity {
 
             let mut destination = world.get_entity_mut(self.destination).unwrap();
 
-            component.apply_or_insert(&mut destination, &*source);
+            // component.apply_or_insert(&mut destination, &*source);
         }
     }
 }

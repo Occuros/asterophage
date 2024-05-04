@@ -16,7 +16,7 @@ pub fn debug_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 font_size: 10.0,
                 ..default()
             },
-        ).with_text_alignment(TextAlignment::Left)
+        ).with_text_justify(JustifyText::Left)
             // Set the style of the TextBundle itself.
             .with_style(Style {
                 position_type: PositionType::Absolute,

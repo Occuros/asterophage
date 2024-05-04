@@ -192,7 +192,7 @@ pub fn update_cursor_system(
     let (camera, camera_transform) = camera_query.get_single().unwrap();
     game_cursor.ui_position = window.cursor_position();
     if let Some(cursor_position) = window.cursor_position() {
-        let ray: Option<Ray> = camera.viewport_to_world(camera_transform, cursor_position);
+        let ray= camera.viewport_to_world(camera_transform, cursor_position);
         let filter = SpatialQueryFilter::default();
         if let Some(ray) = ray {
             if let Some(hit) = spatial_query.cast_ray(ray.origin, ray.direction, f32::MAX, true, filter) {
@@ -258,7 +258,7 @@ pub fn move_building_preview_with_cursor_system(
 pub fn remove_preview_building_system(
     mut commands: Commands,
     mut game_cursor: ResMut<GameCursor>,
-    mouse_input: Res<Input<MouseButton>>
+    mouse_input: Res<ButtonInput<MouseButton>>
 ) {
     if !mouse_input.just_pressed(MouseButton::Right) {return;}
     if game_cursor.preview_entity.is_none() {return;}
@@ -268,10 +268,10 @@ pub fn remove_preview_building_system(
 
 pub fn rotate_preview_item_system(
     game_cursor: Res<GameCursor>,
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     mut tranform_q: Query<&mut Transform>,
 ) {
-    if !input.just_pressed(KeyCode::R) {return;}
+    if !input.just_pressed(KeyCode::KeyR) {return;}
     if game_cursor.preview_entity.is_none() {return;}
 
     let mut transform = tranform_q.get_mut(game_cursor.preview_entity.unwrap()).unwrap();

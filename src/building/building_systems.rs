@@ -11,7 +11,7 @@ pub fn place_building_system(
     mut commands: Commands,
     mut shapes: ShapeCommands,
     mut asset_server: ResMut<AssetServer>,
-    input: Res<Input<MouseButton>>,
+    input: Res<ButtonInput<MouseButton>>,
     game_cursor: ResMut<GameCursor>,
     mut world_grid: ResMut<WorldGrid>,
     mut building_q: Query<(Entity, &Transform, &Building)>,
@@ -69,7 +69,7 @@ pub fn place_building_system(
             building_type: building.building_type,
             grid_position: grid_position,
             grid_rotation: transform.grid_rotation(),
-        })
+        });
     }
 }
 
@@ -349,7 +349,7 @@ pub fn handle_belt_placement_system(
         }
 
         info!("placed entity {:?}", building_placed.entity);
-        if let Ok(mut placed_belt) = belt_q.get_component_mut::<BeltElement>(building_placed.entity)
+        if let Ok(mut placed_belt) = belt_q.get_mut(building_placed.entity)
         {
             placed_belt.conveyor_belt = final_conveyor_entity;
             if placed_belt.conveyor_belt.is_none() {

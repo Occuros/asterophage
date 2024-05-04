@@ -18,7 +18,7 @@ pub fn spawn_player(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 0.50 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            material: materials.add(StandardMaterial::from(Color::rgb(0.8, 0.7, 0.6))),
             transform: Transform::from_xyz(0.0, 0.25, 0.0),
             ..default()
         },
@@ -32,7 +32,7 @@ pub fn spawn_player(
 
 
 pub fn move_player(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     game_cursor: Res<GameCursor>,
     mut player_query: Query<(&mut Transform, &mut Player)>,
     time: Res<Time>,
@@ -40,16 +40,16 @@ pub fn move_player(
     let mut direction = Vec3::ZERO;
 
     if let Ok((mut transform, mut player)) = player_query.get_single_mut() {
-        if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
+        if keyboard_input.pressed(KeyCode::ArrowLeft) || keyboard_input.pressed(KeyCode::KeyA) {
             direction += Vec3::X;
         }
-        if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
+        if keyboard_input.pressed(KeyCode::ArrowRight) || keyboard_input.pressed(KeyCode::KeyD) {
             direction -= Vec3::X;
         }
-        if keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) {
+        if keyboard_input.pressed(KeyCode::ArrowUp) || keyboard_input.pressed(KeyCode::KeyW) {
             direction += Vec3::Z;
         }
-        if keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) {
+        if keyboard_input.pressed(KeyCode::ArrowDown) || keyboard_input.pressed(KeyCode::KeyS) {
             direction -= Vec3::Z;
         }
 
@@ -103,7 +103,7 @@ pub fn shoot(
     mut commands: Commands,
     meshes: ResMut<Assets<Mesh>>,
     materials: ResMut<Assets<StandardMaterial>>,
-    input: Res<Input<MouseButton>>,
+    input: Res<ButtonInput<MouseButton>>,
     game_cursor: Res<GameCursor>,
     player_query: Query<(Entity, &Transform), With<Player>>,
 ) {
@@ -173,7 +173,7 @@ pub fn move_light_system(
     mut light_query: Query<&mut Transform, (With<PointLight>, Without<Player>)>,
     player_query: Query<&Transform, (With<Player>, Without<PointLight>)>,
 ) {
-    let offset = Vec3::new(0.0, 8.0, 2.0);
+    let offset = Vec3::new(0.0, 4.0, -2.0);
     if let Ok(player_transform) = player_query.get_single() {
         for mut light_transform in light_query.iter_mut() {
             light_transform.translation = player_transform.translation + offset;

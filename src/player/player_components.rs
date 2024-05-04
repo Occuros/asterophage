@@ -34,12 +34,13 @@ impl Bullet {
             subdivisions: 12,
         };
         let transform = Transform::from_translation(position).with_rotation(rotation);
+        
         commands
             .spawn((
                 PbrBundle {
                     transform,
                     mesh: meshes.add(Mesh::try_from(shape).unwrap()),
-                    material: materials.add(Color::PURPLE.into()),
+                    material: materials.add(StandardMaterial::from(Color::PURPLE)),
                     ..default()
                 },
                 Bullet {},
