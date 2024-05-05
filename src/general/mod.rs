@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::general::general_systems::*;
+use crate::{MainCamera, setup};
 use crate::player::player_components::GameCursor;
 
 mod general_systems;
@@ -17,10 +18,11 @@ impl Plugin for GeneralPlugin {
             .add_systems(Update, remove_preview_building_system)
             .add_systems(Update, rotate_preview_item_system)
             .add_systems(PostUpdate , move_building_preview_with_cursor_system)
-            .add_systems(Startup, setup_menu)
+            .add_systems(Startup, setup_menu.after(setup))
         ;
     }
 }
+
 
 pub trait Pastel {
     fn pastel(&self) -> Color;

@@ -69,15 +69,15 @@ impl CloneEntity {
 
         
 
-        for component in components {
-            let source = component
-                .reflect(world.get_entity(self.source).unwrap())
-                .unwrap()
-                .clone_value();
+        // for component in components {
+        //     let source = component
+        //         .reflect(world.get_entity(self.source).unwrap())
+        //         .unwrap()
+        //         .clone_value();
 
-            let mut destination = world.get_entity_mut(self.destination).unwrap();
+            // let mut destination = world.get_entity_mut(self.destination).unwrap();
 
             // component.apply_or_insert(&mut destination, &*source);
-        }
+        // }
     }
 }

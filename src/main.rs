@@ -26,9 +26,7 @@ pub enum AppState {
 }
 
 #[derive(Component, Debug, Clone)]
-pub struct MainCamera{}
-
-
+pub struct MainCamera {}
 
 
 fn main() {
@@ -56,7 +54,6 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut ambient_light: ResMut<AmbientLight>,
     mut rng: ResMut<GlobalRng>,
 ) {
     // plane
@@ -74,6 +71,7 @@ fn setup(
         Name::new("Floor"),
     ));
 
+
     for _i in 0..30 {
         let size = 0.5;
         let max_position = 20.0;
@@ -84,7 +82,7 @@ fn setup(
         );
 
         // cube
-        commands.spawn((
+        let _ = commands.spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 0.50 })),
                 material: materials.add(Color::rgb(0.8, rng.f32(), 0.6)),
@@ -97,7 +95,9 @@ fn setup(
                 .with_dynamic_coefficient(0.9)
                 .with_combine_rule(CoefficientCombine::Max),
             Name::new("cube"),
-        ));
+        )).id();
+
+        // commands.entity(cubes).push_children(&[cube]);
     }
 
     // light
@@ -110,23 +110,6 @@ fn setup(
         transform: Transform::from_xyz(4.0, 20.0, 4.0),
         ..default()
     });
-    // 
-    // ambient_light.brightness = 120.0;
-
-    // 199, 212, 255, 255
-    // commands.spawn(DirectionalLightBundle {
-    //     directional_light: DirectionalLight {
-    //         shadows_enabled: true,
-    //         illuminance: 5_000.0,
-    //         // color: Color::rgb(199.0/255.0, 212.0/255.0, 1.0),
-    //         ..default()
-    //     },
-    //     
-    //     transform: Transform::from_xyz(0.0, 120.0, -120.0).looking_at(Vec3::ZERO, Vec3::Y),
-    // 
-    //     ..default()
-    // });
-
 
 
     let _eye = Vec3::new(-0.2, 2.5, 5.0);
@@ -134,14 +117,16 @@ fn setup(
 
     // camera
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        })
-        .insert(MainCamera {})
-        // .insert(
-        //     PickableBundle::default(), // Enable picking using this camera
-        // )
+        .spawn((
+            Camera3dBundle {
+                transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+                ..default()
+            },
+            MainCamera{},
+        ))
+    // .insert(
+    //     PickableBundle::default(), // Enable picking using this camera
+    // )
     ;
 }
 
