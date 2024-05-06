@@ -28,6 +28,13 @@ pub struct ConveyorPlacedEvent {
 }
 
 
+#[derive(Event)]
+pub struct BuildingRemovedEvent {
+    pub building_entity: Entity,
+    pub grid_position: GridPosition,
+}
+
+
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Building {

@@ -6,10 +6,7 @@ use crate::general::Pastel;
 use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::*;
 use bevy::prelude::*;
-use bevy::utils::info;
-use bevy_editor_pls::egui::debug_text::print;
 use bevy_vector_shapes::prelude::*;
-use log::info;
 
 pub fn place_building_system(
     mut commands: Commands,
@@ -77,6 +74,52 @@ pub fn place_building_system(
     }
 }
 
+
+pub fn remove_building_system(
+    input: Res<ButtonInput<MouseButton>>,
+    game_cursor: ResMut<GameCursor>,
+    mut world_grid: ResMut<WorldGrid>,
+    mut building_removed_event: EventWriter<BuildingRemovedEvent>,
+) {
+    if game_cursor.world_position.is_none() {
+        return;
+    };
+
+    if !input.just_pressed(MouseButton::Right) {
+        return;
+    }
+    let position = game_cursor.world_position.unwrap();
+
+    let grid_position = world_grid.get_grid_position_from_world_position(position);
+    if let Some(cell) = world_grid.cells.get_mut(&grid_position) {
+        match cell.surface_layer {
+            SurfaceLayer::Building {
+                entity
+            } => {
+                building_removed_event.send(BuildingRemovedEvent {
+                    building_entity: entity,
+                    grid_position,
+                });
+            }
+            _ => return
+        }
+    }
+}
+
+
+pub fn destroy_building_system(
+    mut command: Commands,
+    mut building_removed_event: EventReader<BuildingRemovedEvent>,
+    mut world_grid: ResMut<WorldGrid>,
+) {
+    for event in building_removed_event.read() {
+        command.entity(event.building_entity).despawn_recursive();
+        if let Some(cell) = world_grid.cells.get_mut(&event.grid_position) {
+            cell.surface_layer = SurfaceLayer::Empty;
+        }
+    }
+}
+
 pub fn respond_to_conveyor_belt_placement_event(
     mut commands: Commands,
     mut building_placed_event: EventReader<BuildingPlacedEvent>,
@@ -101,6 +144,59 @@ pub fn respond_to_conveyor_belt_placement_event(
         });
     }
 }
+
+pub fn respond_to_belt_element_removal(
+    mut commands: Commands,
+    mut building_removed_event: EventReader<BuildingRemovedEvent>,
+    mut belt_q: Query<&mut BeltElement>,
+    mut conveyor_q: Query<&mut CompleteConveryorBelt>,
+) {
+
+    for event in building_removed_event.read() {
+        let Ok(belt) = belt_q.get(event.building_entity) else {return};
+        let Some(conveyor_entity) = belt.conveyor_belt else {return};
+        let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity)  else {return};
+        if conveyor.belt_pieces.first().unwrap().entity == event.building_entity {
+            conveyor.belt_pieces.remove(0);
+            if (conveyor.belt_pieces.is_empty()) {
+               commands.entity(conveyor_entity).despawn_recursive();
+                return;
+            }
+
+            conveyor.start_position = conveyor.belt_pieces.first().unwrap().grid_position;
+        } else if conveyor.belt_pieces.last().unwrap().entity == event.building_entity {
+            let new_length = conveyor.belt_pieces.len() - 1;
+            conveyor.belt_pieces.truncate(new_length);
+            if (conveyor.belt_pieces.is_empty()) {
+                commands.entity(conveyor_entity).despawn_recursive();
+                return;
+            }
+
+            conveyor.end_position = conveyor.belt_pieces.last().unwrap().grid_position;
+        } else {
+            let index = conveyor.belt_pieces.iter().position(|&b| b.entity == event.building_entity).unwrap();
+            let before = conveyor.belt_pieces[0..index].to_vec();
+            let after = conveyor.belt_pieces[index + 1..].to_vec();
+            conveyor.belt_pieces = before;
+            conveyor.end_position = conveyor.belt_pieces.last().unwrap().grid_position;
+
+
+
+            let new_conveyor_entity = commands.spawn(CompleteConveryorBelt {
+                start_position: after.first().unwrap().grid_position,
+                end_position: after.last().unwrap().grid_position,
+                belt_pieces: after[..].to_vec(),
+            }).id();
+
+            for belt in after.iter() {
+                let mut belt_element = belt_q.get_mut(belt.entity).unwrap();
+                belt_element.conveyor_belt = Some(new_conveyor_entity);
+            }
+
+        }
+    }
+}
+
 
 pub fn handle_conveyor_placement_system(
     mut commands: Commands,
@@ -139,10 +235,10 @@ pub fn handle_conveyor_placement_system(
             left_conveyor_entity,
             right_conveyor_entity,
         ]
-        .iter()
-        .flatten()
-        .map(|e| *e)
-        .collect::<Vec<_>>();
+            .iter()
+            .flatten()
+            .map(|e| *e)
+            .collect::<Vec<_>>();
 
         for i in 0..conveyors_entities_to_check.len() {
             let Some(&next_conveyor_entity) = conveyors_entities_to_check.first() else {
@@ -217,9 +313,9 @@ fn check_for_conveyor_merge(
 ) -> Option<Entity> {
     let Ok([mut primary_conveyor, mut secondary_conveyor]) =
         conveyor_q.get_many_mut([primary_conveyor_entity, secondary_conveyor_entity])
-    else {
-        return None;
-    };
+        else {
+            return None;
+        };
     let Some(secondary_end_piece) = secondary_conveyor.belt_pieces.last() else {
         return None;
     };
@@ -258,7 +354,7 @@ fn check_for_conveyor_merge(
             .belt_pieces
             .append(&mut secondary_conveyor.belt_pieces);
         primary_conveyor.end_position = secondary_conveyor.end_position;
-        
+
         commands
             .entity(secondary_conveyor_entity)
             .despawn_recursive();
@@ -278,7 +374,7 @@ pub fn debug_draw_conveyors(
             shapes.transform = Transform::from_translation(
                 world_grid.grid_to_world(&belt.grid_position) + Vec3::Y * 0.05,
             )
-            .with_rotation(Quat::from_rotation_x(TAU * 0.25));
+                .with_rotation(Quat::from_rotation_x(TAU * 0.25));
             shapes.thickness = 0.02;
             shapes.hollow = true;
 
