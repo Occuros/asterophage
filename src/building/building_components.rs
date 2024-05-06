@@ -6,7 +6,7 @@ use bevy_vector_shapes::prelude::*;
 use std::f32::consts::TAU;
 use std::time::Duration;
 
-#[derive(Default, Reflect, Clone, Copy)]
+#[derive(Default, Reflect, Clone, Copy, PartialEq)]
 pub enum BuildingType {
     #[default]
     None,
@@ -21,6 +21,12 @@ pub struct BuildingPlacedEvent {
     pub grid_rotation: GridRotation,
     pub entity: Entity,
 }
+
+#[derive(Event)]
+pub struct ConveyorPlacedEvent {
+    pub entity: Entity,
+}
+
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
@@ -117,7 +123,6 @@ impl BeltElement {
         commands: &mut Commands,
         shapes: &mut ShapeCommands,
     ) -> Entity {
-    
         let entity = commands
             .spawn((
                 SpatialBundle {
@@ -128,7 +133,7 @@ impl BeltElement {
                 },
                 BeltElement {
                     conveyor_belt: None,
-                    speed: 1.0, 
+                    speed: 1.0,
                 },
                 Building {
                     building_type: BuildingType::ConveyorBelt,
@@ -140,7 +145,7 @@ impl BeltElement {
                 shapes.transform = Transform::from_rotation(
                     Quat::from_rotation_y(TAU * 0.25) * Quat::from_rotation_x(TAU * 0.25) * Quat::from_rotation_z(TAU * 0.25),
                 )
-                .with_translation(Vec3::Y * 0.01);
+                    .with_translation(Vec3::Y * 0.01);
                 shapes.thickness = 0.01;
                 shapes.color = Color::YELLOW.pastel();
                 shapes.ngon(3.0, 0.2);
@@ -168,14 +173,51 @@ impl CompleteConveryorBelt {
             start_position: belt_piece.grid_position,
             end_position: belt_piece.grid_position,
             belt_pieces: vec![belt_piece],
-        }).id();
+        }).insert(Name::new("Conveyor")).id();
         conveyor_belt_entity
+    }
+
+    pub fn get_connecting_positions_from_start(&self) -> Vec<GridPosition> {
+        let Some(start_piece) = self.belt_pieces.first() else { return vec![]; };
+        vec![
+            self.start_position.get_relative_left(start_piece.grid_rotation),
+            self.start_position.get_relative_back(start_piece.grid_rotation),
+            self.start_position.get_relative_right(start_piece.grid_rotation),
+        ]
+    }
+
+    pub fn get_connecting_positions_from_end(&self) -> Vec<GridPosition> {
+        let Some(last_piece) = self.belt_pieces.last() else { return vec![]; };
+        vec![
+            self.end_position.get_relative_left(last_piece.grid_rotation),
+            self.end_position.get_relative_forward(last_piece.grid_rotation),
+            self.end_position.get_relative_right(last_piece.grid_rotation),
+        ]
+    }
+
+
+    pub fn can_connect_to_start_piece(&self, other_piece: &BeltPiece) -> bool {
+        let Some(start_piece) = self.belt_pieces.first() else { return false; };
+        if !self.get_connecting_positions_from_start().contains(&other_piece.grid_position) {return false;}
+        start_piece
+            .grid_rotation
+            .difference(other_piece.grid_rotation)
+            < 2
+    }
+
+    pub fn end_piece_can_connect_to(&self, other_piece: &BeltPiece) -> bool {
+        let Some(end_piece) = self.belt_pieces.last() else { return false; };
+        if !self.get_connecting_positions_from_end().contains(&other_piece.grid_position) {return false;}
+        end_piece
+            .grid_rotation
+            .difference(other_piece.grid_rotation)
+            < 2
     }
 }
 
 #[derive(Reflect, Clone, Copy)]
 pub struct BeltPiece {
     pub entity: Entity,
-    pub direction: GridRotation,
+    pub grid_rotation: GridRotation,
     pub grid_position: GridPosition,
 }

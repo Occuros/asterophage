@@ -24,6 +24,8 @@ bevy_mod_billboard = { git = "https://github.com/kulkalkul/bevy_mod_billboard" }
 bevy_screen_diagnostics = "0.5.0"
 dotenv = "0.15.0"
 noisy_bevy = "0.6.0"
+clap = { version = "4.5.4", features = ["derive"] }
+log = "0.4.20"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
