@@ -168,17 +168,30 @@ impl BeltElement {
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-pub struct CompleteConveryorBelt {
-    pub start_position: GridPosition,
-    pub end_position: GridPosition,
+pub struct ConveyorBelt {
+    // pub start_position: GridPosition,
+    // pub end_position: GridPosition,
     pub belt_pieces: Vec<BeltPiece>,
 }
 
-impl CompleteConveryorBelt {
+impl ConveyorBelt {
+
+    pub fn start_position(&self) -> GridPosition {
+        match self.belt_pieces.first() {
+            None => GridPosition::default(),
+            Some(belt) => belt.grid_position
+        }
+    }
+
+    pub fn end_position(&self) -> GridPosition {
+        match self.belt_pieces.last() {
+            None => GridPosition::default(),
+            Some(belt) => belt.grid_position
+        }
+    }
+
     pub fn spawn_new(commands: &mut Commands, belt_piece: BeltPiece) -> Entity {
-        let conveyor_belt_entity = commands.spawn_empty().insert(CompleteConveryorBelt {
-            start_position: belt_piece.grid_position,
-            end_position: belt_piece.grid_position,
+        let conveyor_belt_entity = commands.spawn_empty().insert(ConveyorBelt {
             belt_pieces: vec![belt_piece],
         }).insert(Name::new("Conveyor")).id();
         conveyor_belt_entity
@@ -187,18 +200,18 @@ impl CompleteConveryorBelt {
     pub fn get_connecting_positions_from_start(&self) -> Vec<GridPosition> {
         let Some(start_piece) = self.belt_pieces.first() else { return vec![]; };
         vec![
-            self.start_position.get_relative_left(start_piece.grid_rotation),
-            self.start_position.get_relative_back(start_piece.grid_rotation),
-            self.start_position.get_relative_right(start_piece.grid_rotation),
+            self.start_position().get_relative_left(start_piece.grid_rotation),
+            self.start_position().get_relative_back(start_piece.grid_rotation),
+            self.start_position().get_relative_right(start_piece.grid_rotation),
         ]
     }
 
     pub fn get_connecting_positions_from_end(&self) -> Vec<GridPosition> {
         let Some(last_piece) = self.belt_pieces.last() else { return vec![]; };
         vec![
-            self.end_position.get_relative_left(last_piece.grid_rotation),
-            self.end_position.get_relative_forward(last_piece.grid_rotation),
-            self.end_position.get_relative_right(last_piece.grid_rotation),
+            self.end_position().get_relative_left(last_piece.grid_rotation),
+            self.end_position().get_relative_forward(last_piece.grid_rotation),
+            self.end_position().get_relative_right(last_piece.grid_rotation),
         ]
     }
 

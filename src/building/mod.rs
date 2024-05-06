@@ -2,7 +2,7 @@ use crate::building::building_systems::*;
 use bevy::prelude::*;
 use crate::building::building_components::{BuildingPlacedEvent, BuildingRemovedEvent, ConveyorPlacedEvent};
 
-use self::building_components::{Building, Extractor, BeltElement, CompleteConveryorBelt};
+use self::building_components::{Building, Extractor, BeltElement, ConveyorBelt};
 
 pub mod building_components;
 mod building_systems;
@@ -18,7 +18,7 @@ impl Plugin for BuildingPlugin {
             .register_type::<Building>()
             .register_type::<Extractor>()
             .register_type::<BeltElement>()
-            .register_type::<CompleteConveryorBelt>()
+            .register_type::<ConveyorBelt>()
             .add_systems(Update, place_building_system)
             .add_systems(Update, respond_to_conveyor_belt_placement_event.after(place_building_system))
             .add_systems(Update, handle_conveyor_placement_system.after(respond_to_conveyor_belt_placement_event))

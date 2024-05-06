@@ -136,7 +136,7 @@ pub fn respond_to_conveyor_belt_placement_event(
             grid_position: building_placed.grid_position,
         };
 
-        let conveyor_belt = CompleteConveryorBelt::spawn_new(&mut commands, belt_piece);
+        let conveyor_belt = ConveyorBelt::spawn_new(&mut commands, belt_piece);
         let mut belt_element = belt_q.get_mut(building_placed.entity).unwrap();
         belt_element.conveyor_belt = Some(conveyor_belt);
         conveyor_placed_event.send(ConveyorPlacedEvent {
@@ -149,7 +149,7 @@ pub fn respond_to_belt_element_removal(
     mut commands: Commands,
     mut building_removed_event: EventReader<BuildingRemovedEvent>,
     mut belt_q: Query<&mut BeltElement>,
-    mut conveyor_q: Query<&mut CompleteConveryorBelt>,
+    mut conveyor_q: Query<&mut ConveyorBelt>,
 ) {
 
     for event in building_removed_event.read() {
@@ -162,8 +162,6 @@ pub fn respond_to_belt_element_removal(
                commands.entity(conveyor_entity).despawn_recursive();
                 return;
             }
-
-            conveyor.start_position = conveyor.belt_pieces.first().unwrap().grid_position;
         } else if conveyor.belt_pieces.last().unwrap().entity == event.building_entity {
             let new_length = conveyor.belt_pieces.len() - 1;
             conveyor.belt_pieces.truncate(new_length);
@@ -171,20 +169,14 @@ pub fn respond_to_belt_element_removal(
                 commands.entity(conveyor_entity).despawn_recursive();
                 return;
             }
-
-            conveyor.end_position = conveyor.belt_pieces.last().unwrap().grid_position;
         } else {
             let index = conveyor.belt_pieces.iter().position(|&b| b.entity == event.building_entity).unwrap();
             let before = conveyor.belt_pieces[0..index].to_vec();
             let after = conveyor.belt_pieces[index + 1..].to_vec();
             conveyor.belt_pieces = before;
-            conveyor.end_position = conveyor.belt_pieces.last().unwrap().grid_position;
 
 
-
-            let new_conveyor_entity = commands.spawn(CompleteConveryorBelt {
-                start_position: after.first().unwrap().grid_position,
-                end_position: after.last().unwrap().grid_position,
+            let new_conveyor_entity = commands.spawn(ConveyorBelt {
                 belt_pieces: after[..].to_vec(),
             }).id();
 
@@ -204,14 +196,14 @@ pub fn handle_conveyor_placement_system(
     world_grid: Res<WorldGrid>,
     mut belt_q: Query<&mut BeltElement>,
     transform_q: Query<&Transform>,
-    mut conveyor_q: Query<&mut CompleteConveryorBelt>,
+    mut conveyor_q: Query<&mut ConveyorBelt>,
 ) {
     for conveyor_placement in belt_element_placed_event.read() {
         let conveyor = conveyor_q.get(conveyor_placement.entity).unwrap();
         let belt_transform = transform_q.get(conveyor.belt_pieces[0].entity).unwrap();
         let mut primary_conveyor_entity = conveyor_placement.entity;
 
-        let grid_position = conveyor.start_position;
+        let grid_position = conveyor.start_position();
         let grid_rotation = belt_transform.grid_rotation();
 
         let forward_position = world_grid
@@ -309,7 +301,7 @@ fn check_for_conveyor_merge(
     primary_conveyor_entity: Entity,
     secondary_conveyor_entity: Entity,
     mut belt_q: &mut Query<&mut BeltElement>,
-    mut conveyor_q: &mut Query<&mut CompleteConveryorBelt>,
+    mut conveyor_q: &mut Query<&mut ConveyorBelt>,
 ) -> Option<Entity> {
     let Ok([mut primary_conveyor, mut secondary_conveyor]) =
         conveyor_q.get_many_mut([primary_conveyor_entity, secondary_conveyor_entity])
@@ -341,7 +333,6 @@ fn check_for_conveyor_merge(
             .belt_pieces
             .append(&mut primary_conveyor.belt_pieces);
 
-        secondary_conveyor.end_position = primary_conveyor.end_position;
         commands.entity(primary_conveyor_entity).despawn_recursive();
         return Some(secondary_conveyor_entity);
     } else if primary_conveyor.end_piece_can_connect_to(secondary_start_piece) {
@@ -353,7 +344,6 @@ fn check_for_conveyor_merge(
         primary_conveyor
             .belt_pieces
             .append(&mut secondary_conveyor.belt_pieces);
-        primary_conveyor.end_position = secondary_conveyor.end_position;
 
         commands
             .entity(secondary_conveyor_entity)
@@ -366,7 +356,7 @@ fn check_for_conveyor_merge(
 
 pub fn debug_draw_conveyors(
     mut shapes: ShapePainter,
-    conveyor_q: Query<&CompleteConveryorBelt>,
+    conveyor_q: Query<&ConveyorBelt>,
     world_grid: Res<WorldGrid>,
 ) {
     for conveyor in conveyor_q.iter() {
@@ -378,11 +368,11 @@ pub fn debug_draw_conveyors(
             shapes.thickness = 0.02;
             shapes.hollow = true;
 
-            if belt.grid_position == conveyor.start_position {
+            if belt.grid_position == conveyor.start_position() {
                 shapes.color = Color::BLACK;
                 shapes.circle(0.1);
             }
-            if belt.grid_position == conveyor.end_position {
+            if belt.grid_position == conveyor.end_position() {
                 shapes.color = Color::RED;
                 shapes.circle(0.15);
             }
