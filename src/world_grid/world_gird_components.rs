@@ -12,51 +12,57 @@ impl GridPosition {
     #[allow(dead_code)]
     pub fn get_neighbour(&self, direction: GridRotation) -> GridPosition {
         match direction {
-            GridRotation::N => GridPosition {x: self.x, y: self.y + 1},
-            GridRotation::S => GridPosition {x: self.x, y: self.y - 1},
-            GridRotation::W => GridPosition {x: self.x -1, y: self.y},
-            GridRotation::E => GridPosition {x: self.x + 1, y: self.y},
+            GridRotation::N => GridPosition { x: self.x, y: self.y + 1 },
+            GridRotation::S => GridPosition { x: self.x, y: self.y - 1 },
+            GridRotation::W => GridPosition { x: self.x - 1, y: self.y },
+            GridRotation::E => GridPosition { x: self.x + 1, y: self.y },
         }
-    } 
+    }
+
+    pub fn get_all_surrounding_positions(&self) -> Vec<GridPosition> {
+        vec![self.get_neighbour(GridRotation::N),
+             self.get_neighbour(GridRotation::E),
+             self.get_neighbour(GridRotation::S),
+             self.get_neighbour(GridRotation::W)]
+    }
 
     pub fn get_relative_forward(&self, rotation: GridRotation) -> GridPosition {
         match rotation {
-            GridRotation::N => GridPosition {x: self.x, y: self.y + 1},
-            GridRotation::S => GridPosition {x: self.x, y: self.y - 1},
-            GridRotation::W => GridPosition {x: self.x + 1, y: self.y},
-            GridRotation::E => GridPosition {x: self.x - 1, y: self.y},
+            GridRotation::N => GridPosition { x: self.x, y: self.y + 1 },
+            GridRotation::S => GridPosition { x: self.x, y: self.y - 1 },
+            GridRotation::W => GridPosition { x: self.x + 1, y: self.y },
+            GridRotation::E => GridPosition { x: self.x - 1, y: self.y },
         }
     }
 
     #[allow(dead_code)]
     pub fn get_relative_back(&self, rotation: GridRotation) -> GridPosition {
         match rotation {
-            GridRotation::N => GridPosition {x: self.x, y: self.y - 1},
-            GridRotation::S => GridPosition {x: self.x, y: self.y + 1},
-            GridRotation::W => GridPosition {x: self.x - 1, y: self.y},
-            GridRotation::E => GridPosition {x: self.x + 1, y: self.y},
+            GridRotation::N => GridPosition { x: self.x, y: self.y - 1 },
+            GridRotation::S => GridPosition { x: self.x, y: self.y + 1 },
+            GridRotation::W => GridPosition { x: self.x - 1, y: self.y },
+            GridRotation::E => GridPosition { x: self.x + 1, y: self.y },
         }
     }
     #[allow(dead_code)]
     pub fn get_relative_left(&self, rotation: GridRotation) -> GridPosition {
         match rotation {
-            GridRotation::N => GridPosition {x: self.x + 1 , y: self.y},
-            GridRotation::S => GridPosition {x: self.x - 1, y: self.y},
-            GridRotation::W => GridPosition {x: self.x, y: self.y - 1},
-            GridRotation::E => GridPosition {x: self.x, y: self.y + 1},
+            GridRotation::N => GridPosition { x: self.x + 1, y: self.y },
+            GridRotation::S => GridPosition { x: self.x - 1, y: self.y },
+            GridRotation::W => GridPosition { x: self.x, y: self.y - 1 },
+            GridRotation::E => GridPosition { x: self.x, y: self.y + 1 },
         }
     }
 
     #[allow(dead_code)]
     pub fn get_relative_right(&self, rotation: GridRotation) -> GridPosition {
         match rotation {
-            GridRotation::N => GridPosition {x: self.x - 1 , y: self.y},
-            GridRotation::S => GridPosition {x: self.x + 1, y: self.y},
-            GridRotation::W => GridPosition {x: self.x, y: self.y + 1},
-            GridRotation::E => GridPosition {x: self.x, y: self.y - 1},
+            GridRotation::N => GridPosition { x: self.x - 1, y: self.y },
+            GridRotation::S => GridPosition { x: self.x + 1, y: self.y },
+            GridRotation::W => GridPosition { x: self.x, y: self.y + 1 },
+            GridRotation::E => GridPosition { x: self.x, y: self.y - 1 },
         }
     }
-
 }
 
 impl ops::Add<GridPosition> for GridPosition {
@@ -80,10 +86,6 @@ pub enum GroundLayerType {
     PhlegmResource,
 }
 
-#[derive(Component, Default)]
-pub struct YellowBile {
-    pub amount: i32,
-}
 
 #[derive(Reflect, Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GridRotation {
@@ -140,11 +142,11 @@ impl GridRotation {
 
 pub trait GridPiece {
     fn grid_rotation(&self) -> GridRotation;
+    fn grid_position(&self, grid: &WorldGrid) -> GridPosition;
 }
 
 impl GridPiece for Transform {
     fn grid_rotation(&self) -> GridRotation {
-
         let mut y_rotation = self.rotation.to_euler(EulerRot::YXZ).0;
 
         y_rotation = (y_rotation + TAU) % TAU;
@@ -154,7 +156,7 @@ impl GridPiece for Transform {
         const SOUTH: f32 = 5.0 * PI / 4.0;
         const EAST: f32 = 7.0 * PI / 4.0;
 
-        if  y_rotation < NORTH || y_rotation >= EAST {
+        if y_rotation < NORTH || y_rotation >= EAST {
             GridRotation::N
         } else if y_rotation < WEST {
             GridRotation::W
@@ -164,41 +166,12 @@ impl GridPiece for Transform {
             GridRotation::E
         }
     }
-}
 
-impl YellowBile {
-    pub fn spawn(
-        position: Vec3,
-        rotation: Quat,
-        size: f32,
-        amount: i32,
-        commands: &mut Commands,
-        asset_server: &mut AssetServer,
-        mut _shapes: &mut ShapeCommands,
-    ) -> Entity {
-        // shapes.reset = true;
-        // shapes.transform = Transform::from_translation(position + Vec3::Y * 0.01);
-        // shapes.color = Color::YELLOW;
-        // shapes.rotate_x(TAU * 0.25);
-        // shapes.rotate(rotation);
-        // shapes.circle(0.10).insert(YellowBile {
-        //     amount
-        // });
-        let model = asset_server.load("models/bile-node.glb#Scene0");
-        commands
-            .spawn((
-                SceneBundle {
-                    scene: model,
-                    transform: Transform::from_translation(position)
-                        .with_rotation(rotation)
-                        .with_scale(Vec3::splat(size)),
-                    ..default()
-                },
-                YellowBile { amount },
-            ))
-            .id()
+    fn grid_position(&self, grid: &WorldGrid) -> GridPosition {
+        grid.get_grid_position_from_world_position(self.translation)
     }
 }
+
 
 #[derive(Hash, Eq, PartialEq, Default, Clone, Reflect, Debug)]
 pub enum SurfaceLayer {
@@ -280,6 +253,4 @@ impl WorldGrid {
         }
         return &self.cells[grid_position];
     }
-
-   
 }

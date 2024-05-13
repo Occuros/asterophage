@@ -14,9 +14,13 @@ impl Plugin for SmallDebugPlugin {
         app
             .add_event::<CursorDebugTextEvent>()
             .add_systems(Startup, debug_setup)
+            // .add_systems(Update, experiiment)
             .add_systems(Update, move_debug_text_system)
             .add_systems(Update, change_debug_text_system)
             .add_systems(Update, cursor_position_debug_system)
+            // .add_systems(Update, debug_draw_conveyors)
+
+            // .add_systems(Update, draw_belt_forward)
             ;
     }
 }

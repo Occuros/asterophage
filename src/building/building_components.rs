@@ -14,6 +14,14 @@ pub enum BuildingType {
     ConveyorBelt,
 }
 
+#[derive(Default, Reflect, Component)]
+pub struct Preview {
+
+}
+
+#[derive(Default, Reflect, Component)]
+pub struct Active {}
+
 #[derive(Event)]
 pub struct BuildingPlacedEvent {
     pub building_type: BuildingType,
@@ -120,6 +128,8 @@ impl Extractor {
 pub struct BeltElement {
     pub speed: f32,
     pub conveyor_belt: Option<Entity>,
+    pub item: Option<Entity>,
+    pub item_reached_center: bool,
 }
 
 impl BeltElement {
@@ -141,6 +151,7 @@ impl BeltElement {
                 BeltElement {
                     conveyor_belt: None,
                     speed: 1.0,
+                    ..default()
                 },
                 Building {
                     building_type: BuildingType::ConveyorBelt,
@@ -169,8 +180,7 @@ impl BeltElement {
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct ConveyorBelt {
-    // pub start_position: GridPosition,
-    // pub end_position: GridPosition,
+    //belt pieces first is at the start, last at the end
     pub belt_pieces: Vec<BeltPiece>,
 }
 
@@ -193,6 +203,7 @@ impl ConveyorBelt {
     pub fn spawn_new(commands: &mut Commands, belt_piece: BeltPiece) -> Entity {
         let conveyor_belt_entity = commands.spawn_empty().insert(ConveyorBelt {
             belt_pieces: vec![belt_piece],
+            ..default()
         }).insert(Name::new("Conveyor")).id();
         conveyor_belt_entity
     }
@@ -233,6 +244,7 @@ impl ConveyorBelt {
             .difference(other_piece.grid_rotation)
             < 2
     }
+
 }
 
 #[derive(Reflect, Clone, Copy)]

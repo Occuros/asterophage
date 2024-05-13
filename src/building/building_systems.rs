@@ -1,12 +1,14 @@
-use std::cmp::PartialEq;
 use std::f32::consts::TAU;
+use std::ops::Sub;
 
 use crate::building::building_components::*;
 use crate::general::Pastel;
 use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::*;
 use bevy::prelude::*;
+use bevy::utils::tracing::field::debug;
 use bevy_vector_shapes::prelude::*;
+use crate::world_grid::components::yellow_bile::YellowBileItem;
 
 pub fn place_building_system(
     mut commands: Commands,
@@ -60,6 +62,7 @@ pub fn place_building_system(
             &mut asset_server,
             &mut shapes,
         );
+        commands.entity(placed_building.unwrap()).insert(Active {});
 
         cell.surface_layer = SurfaceLayer::Building {
             entity: placed_building.unwrap(),
@@ -151,15 +154,14 @@ pub fn respond_to_belt_element_removal(
     mut belt_q: Query<&mut BeltElement>,
     mut conveyor_q: Query<&mut ConveyorBelt>,
 ) {
-
     for event in building_removed_event.read() {
-        let Ok(belt) = belt_q.get(event.building_entity) else {return};
-        let Some(conveyor_entity) = belt.conveyor_belt else {return};
-        let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity)  else {return};
+        let Ok(belt) = belt_q.get(event.building_entity) else { return; };
+        let Some(conveyor_entity) = belt.conveyor_belt else { return; };
+        let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity)  else { return; };
         if conveyor.belt_pieces.first().unwrap().entity == event.building_entity {
             conveyor.belt_pieces.remove(0);
             if (conveyor.belt_pieces.is_empty()) {
-               commands.entity(conveyor_entity).despawn_recursive();
+                commands.entity(conveyor_entity).despawn_recursive();
                 return;
             }
         } else if conveyor.belt_pieces.last().unwrap().entity == event.building_entity {
@@ -178,13 +180,13 @@ pub fn respond_to_belt_element_removal(
 
             let new_conveyor_entity = commands.spawn(ConveyorBelt {
                 belt_pieces: after[..].to_vec(),
+                ..default()
             }).id();
 
             for belt in after.iter() {
                 let mut belt_element = belt_q.get_mut(belt.entity).unwrap();
                 belt_element.conveyor_belt = Some(new_conveyor_entity);
             }
-
         }
     }
 }
@@ -354,30 +356,125 @@ fn check_for_conveyor_merge(
     return None;
 }
 
-pub fn debug_draw_conveyors(
-    mut shapes: ShapePainter,
-    conveyor_q: Query<&ConveyorBelt>,
-    world_grid: Res<WorldGrid>,
-) {
-    for conveyor in conveyor_q.iter() {
-        for belt in conveyor.belt_pieces.iter() {
-            shapes.transform = Transform::from_translation(
-                world_grid.grid_to_world(&belt.grid_position) + Vec3::Y * 0.05,
-            )
-                .with_rotation(Quat::from_rotation_x(TAU * 0.25));
-            shapes.thickness = 0.02;
-            shapes.hollow = true;
 
-            if belt.grid_position == conveyor.start_position() {
-                shapes.color = Color::BLACK;
-                shapes.circle(0.1);
-            }
-            if belt.grid_position == conveyor.end_position() {
-                shapes.color = Color::RED;
-                shapes.circle(0.15);
-            }
-            shapes.color = Color::PURPLE.pastel();
-            shapes.rect(Vec2::splat(0.9 * world_grid.grid_size));
+pub fn extract_resources_system(
+    time: Res<Time>,
+    world_grid: Res<WorldGrid>,
+    mut extractor_q: Query<(&mut Extractor, &Transform), With<Active>>,
+    mut belt_q: Query<&mut BeltElement>,
+    mut shapes: ShapeCommands,
+) {
+    for (mut extractor, transform) in extractor_q.iter_mut() {
+        extractor.timer.tick(time.delta());
+        if !extractor.timer.finished() { continue; }
+        let grid_position = world_grid.get_grid_position_from_world_position(transform.translation);
+        let grid_rotation = transform.grid_rotation();
+        let potential_positions = grid_position.get_all_surrounding_positions();
+        for p in potential_positions.iter() {
+            let Some(cell) = world_grid.cells.get(p) else { continue; };
+            let belt = match cell.surface_layer {
+                SurfaceLayer::Empty => {
+                    None
+                }
+                SurfaceLayer::Building { entity } => {
+                    belt_q.get_mut(entity).ok()
+                }
+                SurfaceLayer::Resource { .. } => {
+                    None
+                }
+            };
+            let Some(mut belt) = belt else { continue; };
+            if belt.item.is_some() { continue; }
+            let item_entity = YellowBileItem::spawn(
+                world_grid.grid_to_world(&p),
+                Quat::IDENTITY,
+                &mut shapes,
+            );
+
+            belt.item = Some(item_entity);
         }
     }
 }
+
+pub fn belt_system(
+    time: Res<Time>,
+    world_grid: Res<WorldGrid>,
+    conveyor_q: Query<&ConveyorBelt>,
+    mut belt_q: Query<(&mut BeltElement, &Transform)>,
+    mut transform_q: Query<&mut Transform, Without<BeltElement>>,
+) {
+    for conveyor in conveyor_q.iter() {
+        let mut item_to_move: Option<Entity> = None;
+        let Some(last_belt) = conveyor.belt_pieces.last() else { continue; };
+        let Ok((mut last_belt, last_transform)) = belt_q.get_mut(last_belt.entity) else { continue; };
+        if let Some(item_entity) = last_belt.item {
+            let Ok(mut item_transform) = transform_q.get_mut(item_entity) else { continue; };
+            let mut movement_direction = last_transform.translation - item_transform.translation;
+            movement_direction.y = 0.0;
+            movement_direction = movement_direction.try_normalize().unwrap_or(*last_transform.local_z());
+
+            if last_belt.item_reached_center {
+                movement_direction = *last_transform.local_z();
+            }
+            let distance_before = item_transform.translation.distance(last_transform.translation);
+            let current_grid_position = item_transform.grid_position(&world_grid);
+
+            item_transform.translation += movement_direction * last_belt.speed * time.delta_seconds();
+
+            let distance_after = item_transform.translation.distance(last_transform.translation);
+            if !last_belt.item_reached_center && distance_before < distance_after {
+                item_transform.translation -= movement_direction * last_belt.speed * time.delta_seconds();
+                last_belt.item_reached_center = true;
+            } else {
+                let next_grid_position = item_transform.grid_position(&world_grid);
+                if next_grid_position != current_grid_position {
+                    item_transform.translation -= movement_direction * last_belt.speed * time.delta_seconds();
+                }
+            }
+
+        }
+
+        for i in (0..conveyor.belt_pieces.len() - 1).rev() {
+            let current = conveyor.belt_pieces[i].entity;
+            let next = conveyor.belt_pieces[i + 1].entity;
+            let Ok([
+                (mut current_belt, mut current_transform),
+                (mut next_belt, _)
+            ]) = belt_q.get_many_mut([current, next]) else {continue};
+            if let Some(item_entity) = current_belt.item {
+                let Ok(mut item_transform) = transform_q.get_mut(item_entity) else { continue; };
+                let previous_position = item_transform.translation;
+                let current_grid_position = item_transform.grid_position(&world_grid);
+                let mut movement_direction = current_transform.translation - item_transform.translation;
+                movement_direction.y = 0.0;
+                movement_direction = movement_direction.try_normalize().unwrap_or(*current_transform.local_z());
+
+                if current_belt.item_reached_center {
+                    movement_direction = *current_transform.local_z();
+                }
+                let distance_before = item_transform.translation.distance(current_transform.translation);
+                item_transform.translation += movement_direction * current_belt.speed * time.delta_seconds();
+                let distance_after = item_transform.translation.distance(current_transform.translation);
+                if !current_belt.item_reached_center && distance_before < distance_after {
+                    // item_transform.translation.x = current_transform.translation.x;
+                    // item_transform.translation.z = current_transform.translation.z;
+                    item_transform.translation -= movement_direction * current_belt.speed * time.delta_seconds();
+                    current_belt.item_reached_center = true;
+                }
+
+                let next_grid_position = item_transform.grid_position(&world_grid);
+                if next_grid_position != current_grid_position {
+                    if next_belt.item.is_none() {
+                        current_belt.item = None;
+                        current_belt.item_reached_center = false;
+                        next_belt.item = Some(item_entity);
+                        next_belt.item_reached_center = false;
+                    } else {
+                        item_transform.translation = previous_position;
+                    }
+                }
+            }
+        }
+    }
+}
+

@@ -240,6 +240,7 @@ pub fn building_ui_selection_system(
                 &mut asset_server,
                 &mut shapes,
             );
+            commands.entity(game_cursor.preview_entity.unwrap()).insert(Preview{});
         }
     }
 }

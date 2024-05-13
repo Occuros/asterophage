@@ -4,6 +4,7 @@ use bevy_vector_shapes::prelude::*;
 use noisy_bevy::simplex_noise_2d_seeded;
 use std::f32::consts::TAU;
 use bevy::prelude::*;
+use crate::world_grid::components::yellow_bile::YellowBileResource;
 
 pub fn draw_grid(
     _commands: Commands,
@@ -23,7 +24,7 @@ pub fn draw_grid(
 
     let player_transform = player_q.single();
     let center = world_grid.get_grid_position_from_world_position(player_transform.translation);
-    let draw_distance = 20;
+    let draw_distance = 50;
 
     for x in center.x - draw_distance..=center.x + draw_distance {
         for y in center.y - draw_distance..=center.y + draw_distance {
@@ -41,8 +42,8 @@ pub fn draw_grid(
                     1.0 - (position.x - player_transform.translation.x).abs() / max_distance;
                 let distance_y =
                     1.0 - (position.z - player_transform.translation.z).abs() / max_distance;
-                let distance = distance_x.min(distance_y);
-                let grey_value = 0.8;
+                let distance = distance_x.min(distance_y) * 0.1;
+                let grey_value = 0.5;
                 position.y += 0.001;
                 Color::rgba(grey_value, grey_value, grey_value, distance)
             };
@@ -67,8 +68,8 @@ fn get_noise_value(grid_position: GridPosition, zoom_level: f32) -> f32 {
     for f in &frequencies {
         combined_noise += f
             * ((simplex_noise_2d_seeded(Vec2::new(f * x * zoom_level, f * y * zoom_level), *f)
-                + 1.0)
-                * 0.5)
+            + 1.0)
+            * 0.5)
     }
     combined_noise / frequencies.iter().sum::<f32>()
 }
@@ -102,7 +103,7 @@ pub fn discover_world_system(
                     > resource_settings.bile_level
                 {
                     let position = world_grid.grid_to_world(&grid_position);
-                    YellowBile::spawn(
+                    YellowBileResource::spawn(
                         position,
                         Quat::default(),
                         world_grid.grid_size,

@@ -11,6 +11,7 @@ use bevy_mod_billboard::prelude::*;
 use bevy_turborand::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use bevy_editor_pls::prelude::*;
+use dotenv::dotenv;
 use crate::building::BuildingPlugin;
 use crate::debug::SmallDebugPlugin;
 use crate::general::GeneralPlugin;
@@ -30,13 +31,14 @@ pub struct MainCamera {}
 
 
 fn main() {
+    dotenv().ok();
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(BillboardPlugin)
         .add_plugins(EditorPlugin::default())
         .add_plugins(ShapePlugin::default())
-        .add_plugins(RngPlugin::default())
+        .add_plugins(RngPlugin::new().with_rng_seed(135))
         // .add_plugins(bevy_framepace::FramepacePlugin)
         .init_state::<AppState>()
         .add_systems(Startup, setup)

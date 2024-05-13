@@ -4,6 +4,7 @@ use crate::world_grid::world_grid_systems::*;
 
 pub mod world_gird_components;
 mod world_grid_systems;
+pub mod components;
 
 pub struct WorldGridPlugin;
 
@@ -16,7 +17,8 @@ impl Plugin for WorldGridPlugin {
             .insert_resource(WorldGrid::new( 0.5))
             .insert_resource(ResourceNoiseSettings {
                 zoom_level: 0.02,
-                bile_level: 0.83,
+                // bile_level: 0.83,
+                bile_level: 0.65,
             })
             // .add_systems(Startup, debug_world_system)
             // .add_systems(Startup, debug_spawn_grid_positions)
