@@ -1,13 +1,11 @@
 use std::f32::consts::TAU;
-use std::ops::Sub;
-
 use crate::building::building_components::*;
 use crate::general::Pastel;
 use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::*;
 use bevy::prelude::*;
-use bevy::utils::tracing::field::debug;
 use bevy_vector_shapes::prelude::*;
+use crate::utilities::utility_methods::find_child_with_name;
 use crate::world_grid::components::yellow_bile::YellowBileItem;
 
 pub fn place_building_system(
@@ -405,7 +403,18 @@ pub fn belt_system(
 ) {
     for conveyor in conveyor_q.iter() {
         let mut item_to_move: Option<Entity> = None;
+        let mut next_potential_belt: Option<Entity> = None;
         let Some(last_belt) = conveyor.belt_pieces.last() else { continue; };
+        let next_position = last_belt.grid_position.get_relative_forward(last_belt.grid_rotation);
+        if let Some(cell) = world_grid.cells.get(&next_position) {
+            if let SurfaceLayer::Building { entity } = cell.surface_layer {
+                if let Ok((next_belt, _)) = belt_q.get(entity) {
+                    if next_belt.item.is_none() {
+                        next_potential_belt = Some(entity)
+                    }
+                }
+            }
+        }
         let Ok((mut last_belt, last_transform)) = belt_q.get_mut(last_belt.entity) else { continue; };
         if let Some(item_entity) = last_belt.item {
             let Ok(mut item_transform) = transform_q.get_mut(item_entity) else { continue; };
@@ -428,19 +437,29 @@ pub fn belt_system(
             } else {
                 let next_grid_position = item_transform.grid_position(&world_grid);
                 if next_grid_position != current_grid_position {
-                    item_transform.translation -= movement_direction * last_belt.speed * time.delta_seconds();
+                    if next_potential_belt.is_none() {
+                        item_transform.translation -= movement_direction * last_belt.speed * time.delta_seconds();
+                    } else {
+                        item_to_move = last_belt.item;
+                        last_belt.item = None;
+                    }
                 }
             }
+        }
 
+        if let Some(item_entity) = item_to_move {
+            if let Ok((mut next_belt, _)) = belt_q.get_mut(next_potential_belt.unwrap()) {
+                next_belt.item = item_to_move;
+            }
         }
 
         for i in (0..conveyor.belt_pieces.len() - 1).rev() {
             let current = conveyor.belt_pieces[i].entity;
             let next = conveyor.belt_pieces[i + 1].entity;
             let Ok([
-                (mut current_belt, mut current_transform),
-                (mut next_belt, _)
-            ]) = belt_q.get_many_mut([current, next]) else {continue};
+                   (mut current_belt, mut current_transform),
+                   (mut next_belt, _)
+                   ]) = belt_q.get_many_mut([current, next]) else { continue; };
             if let Some(item_entity) = current_belt.item {
                 let Ok(mut item_transform) = transform_q.get_mut(item_entity) else { continue; };
                 let previous_position = item_transform.translation;
@@ -477,4 +496,79 @@ pub fn belt_system(
         }
     }
 }
+
+
+pub fn inserter_animation_system(
+    mut inserter_q: Query<(Entity, &mut Inserter), Without<Preview>>,
+    mut transform_q: Query<&mut Transform>,
+    children_q: Query<&Children>,
+    name_q: Query<&Name>,
+    time: Res<Time>,
+) {
+    for (entity, mut inserter) in inserter_q.iter_mut() {
+        if inserter.rotation_spot.is_none() {
+            inserter.rotation_spot = find_child_with_name(entity, "element-d", &children_q, &name_q);
+            continue;
+        }
+        if inserter.target_reached { continue; }
+
+        let Ok(mut robot_transform) = transform_q.get_mut(inserter.rotation_spot.unwrap()) else { continue; };
+        let target_rotation = if inserter.item.is_some() { TAU / 2.5 } else { -TAU / 2.5 };
+        let end_rotation = Quat::from_rotation_x(target_rotation);
+
+        if robot_transform.rotation.angle_between(end_rotation) > 0.01 {
+            robot_transform.rotation = robot_transform.rotation.slerp(end_rotation, time.delta_seconds() * 3.0);
+        } else {
+            inserter.target_reached = true;
+        }
+    }
+}
+
+pub fn inserter_system(
+    mut inserter_q: Query<(Entity, &mut Inserter), Without<Preview>>,
+    mut transform_q: Query<&mut Transform>,
+    mut belt_q: Query<&mut BeltElement>,
+    world_grid: Res<WorldGrid>,
+) {
+    for (entity, mut inserter) in inserter_q.iter_mut() {
+        if !inserter.target_reached { continue; };
+
+        let Ok(mut robot_transform) = transform_q.get_mut(entity) else { continue; };
+        let grid_position = robot_transform.grid_position(&world_grid);
+        let back_position = grid_position.get_relative_back(robot_transform.grid_rotation());
+        let forward_position = grid_position.get_relative_forward(robot_transform.grid_rotation());
+
+
+        if inserter.item.is_some() {
+            let Some(cell) = world_grid.cells.get(&forward_position) else { continue; };
+            let SurfaceLayer::Building { entity } = cell.surface_layer else { continue; };
+            let Ok(mut belt) = belt_q.get_mut(entity) else { continue; };
+            if belt.item.is_some() {
+                debug!("belt had something at {:?}", forward_position);
+                continue;
+            };
+            let Ok(mut item_transform) = transform_q.get_mut(inserter.item.unwrap()) else { continue; };
+            debug!("we disposed something at {:?}", forward_position);
+            let target_position = world_grid.grid_to_world(&forward_position);
+            item_transform.translation.x = target_position.x;
+            item_transform.translation.z = target_position.z;
+            belt.item = inserter.item;
+            inserter.item = None;
+            inserter.target_reached = false;
+            continue;
+        } else {
+            let Some(cell) = world_grid.cells.get(&back_position) else { continue; };
+            let SurfaceLayer::Building { entity } = cell.surface_layer else { continue; };
+            let Ok(mut belt) = belt_q.get_mut(entity) else { continue; };
+            if let Some(item) = belt.item {
+                inserter.item = Some(item);
+                belt.item = None;
+                inserter.target_reached = false;
+            }
+        }
+    }
+}
+
+
+
 

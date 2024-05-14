@@ -81,3 +81,22 @@ impl CloneEntity {
         // }
     }
 }
+
+pub fn find_child_with_name(entity: Entity, name: &str, children_q: &Query<&Children>, name_q: &Query<&Name>) -> Option<Entity> {
+    let Ok(children) =  children_q.get(entity) else { return None};
+    for child in children.iter() {
+
+        if let Ok(child_name) = name_q.get(*child)  {
+
+            if child_name.to_string() == name {
+                return Some(*child)
+            }
+        }
+
+        let child_result = find_child_with_name(*child, name, children_q, name_q);
+        if child_result.is_some() {return child_result}
+    }
+
+    None
+
+}

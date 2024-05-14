@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use std::f32::consts::TAU;
 use std::time::Duration;
+use bevy::ecs::system::{EntityCommand, EntityCommands};
 
 #[derive(Default, Reflect, Clone, Copy, PartialEq)]
 pub enum BuildingType {
@@ -12,6 +13,7 @@ pub enum BuildingType {
     None,
     Extractor,
     ConveyorBelt,
+    InserterType
 }
 
 #[derive(Default, Reflect, Component)]
@@ -69,8 +71,9 @@ impl Building {
                 asset_server,
             )),
             BuildingType::ConveyorBelt => Some(BeltElement::spawn(
-                position, rotation, size, commands, shapes,
+                position, rotation, size, commands, shapes, asset_server,
             )),
+            BuildingType::InserterType => Some(Inserter::spawn(position, rotation, size, commands, asset_server))
         }
     }
 }
@@ -94,7 +97,6 @@ impl Extractor {
         asset_server: &mut AssetServer,
     ) -> Entity {
         let model = asset_server.load("models/extractor.glb#Scene0");
-
         commands
             .spawn((
                 SceneBundle {
@@ -136,16 +138,19 @@ impl BeltElement {
     pub fn spawn(
         position: Vec3,
         rotation: Quat,
-        scale: f32,
+        size: f32,
         commands: &mut Commands,
         shapes: &mut ShapeCommands,
+        asset_server: &mut AssetServer,
     ) -> Entity {
+        let model = asset_server.load("models/conveyor-bars-stripe.glb#Scene0");
+
         let entity = commands
             .spawn((
                 SpatialBundle {
                     transform: Transform::from_translation(position)
                         .with_rotation(rotation)
-                        .with_scale(Vec3::splat(scale)),
+                        .with_scale(Vec3::splat(size)),
                     ..default()
                 },
                 BeltElement {
@@ -158,12 +163,20 @@ impl BeltElement {
                 },
                 Name::new("Belt Piece"),
             ))
+            .with_children(|parent| {
+                parent.spawn(SceneBundle {
+                    scene: model,
+                    transform: Transform::from_translation(Vec3::Y * -0.05)
+                        .with_rotation(Quat::from_rotation_y(TAU * 0.25)),
+                    ..default()
+                });
+            })
             .with_shape_children(&shapes.config(), |shapes| {
                 shapes.hollow = true;
                 shapes.transform = Transform::from_rotation(
                     Quat::from_rotation_y(TAU * 0.25) * Quat::from_rotation_x(TAU * 0.25) * Quat::from_rotation_z(TAU * 0.25),
                 )
-                    .with_translation(Vec3::Y * 0.01);
+                    .with_translation(Vec3::Y * 0.25);
                 shapes.thickness = 0.01;
                 shapes.color = Color::YELLOW.pastel();
                 shapes.ngon(3.0, 0.2);
@@ -171,10 +184,63 @@ impl BeltElement {
                 shapes.rect(Vec2::new(0.1, 0.3));
             })
             .id();
-
-
         entity
     }
+}
+
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct Inserter {
+    pub item: Option<Entity>,
+    pub rotation_spot: Option<Entity>,
+    pub target_reached: bool,
+
+}
+
+impl Inserter {
+    pub fn spawn(
+        position: Vec3,
+        rotation: Quat,
+        size: f32,
+        commands: &mut Commands,
+        asset_server: &mut AssetServer,
+        // shapes: &mut ShapeCommands,
+    ) -> Entity {
+        let model = asset_server.load("models/robot-arm-a.glb#Scene0");
+        let entity =  commands
+            .spawn((
+                SceneBundle {
+                    scene: model,
+                    transform: Transform::from_translation(position)
+                        .with_rotation(rotation)
+                        .with_scale(Vec3::splat(size)),
+                    ..default()
+                },
+                Inserter {
+                    ..default()
+                },
+                Building {
+                    building_type: BuildingType::InserterType,
+                },
+                Name::new("Inserter"),
+            ))
+            // .with_shape_children(&shapes.config(), |shapes| {
+            //     shapes.hollow = true;
+            //     shapes.transform = Transform::from_rotation(
+            //         Quat::from_rotation_y(TAU * 0.25) * Quat::from_rotation_x(TAU * 0.25) * Quat::from_rotation_z(TAU * 0.25),
+            //     )
+            //         .with_translation(Vec3::Y * 0.01);
+            //     shapes.thickness = 0.01;
+            //     shapes.color = Color::YELLOW.pastel();
+            //     shapes.ngon(3.0, 0.2);
+            //     shapes.translate(Vec3::Y * -0.15);
+            //     shapes.rect(Vec2::new(0.1, 0.3));
+            // })
+            .id();
+        entity
+    }
+
+
 }
 
 #[derive(Component, Default, Reflect)]

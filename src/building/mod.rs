@@ -1,6 +1,6 @@
 use crate::building::building_systems::*;
 use bevy::prelude::*;
-use crate::building::building_components::{BuildingPlacedEvent, BuildingRemovedEvent, ConveyorPlacedEvent};
+use crate::building::building_components::{BuildingPlacedEvent, BuildingRemovedEvent, ConveyorPlacedEvent, Inserter};
 
 use self::building_components::{Building, Extractor, BeltElement, ConveyorBelt};
 
@@ -19,6 +19,7 @@ impl Plugin for BuildingPlugin {
             .register_type::<Extractor>()
             .register_type::<BeltElement>()
             .register_type::<ConveyorBelt>()
+            .register_type::<Inserter>()
             .add_systems(Update, place_building_system)
             .add_systems(Update, respond_to_conveyor_belt_placement_event.after(place_building_system))
             .add_systems(Update, handle_conveyor_placement_system.after(respond_to_conveyor_belt_placement_event))
@@ -26,6 +27,9 @@ impl Plugin for BuildingPlugin {
             .add_systems(Update, respond_to_belt_element_removal.after(remove_building_system))
             .add_systems(Update, extract_resources_system)
             .add_systems(Update, belt_system)
+            .add_systems(Update, inserter_animation_system)
+            .add_systems(Update, inserter_system)
+
             .add_systems(PostUpdate, destroy_building_system)
 
         // .add_systems(Update, test_place_building_system)

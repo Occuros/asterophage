@@ -118,7 +118,6 @@ pub fn setup_menu(
                                             },
                                         ));
                                     });
-
                                 parent
                                     .spawn(ButtonBundle {
                                         style: Style {
@@ -141,6 +140,36 @@ pub fn setup_menu(
                                     .with_children(|parent| {
                                         parent.spawn(TextBundle::from_section(
                                             "Belt",
+                                            TextStyle {
+                                                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                                                font_size: 10.0,
+                                                color: Color::rgb(0.9, 0.9, 0.9),
+                                            },
+                                        ));
+                                    });
+
+                                parent
+                                    .spawn(ButtonBundle {
+                                        style: Style {
+                                            width: Val::Px(50.),
+                                            height: Val::Px(50.0),
+                                            border: UiRect::all(Val::Px(1.0)),
+                                            // horizontally center child text
+                                            justify_content: JustifyContent::Center,
+                                            // vertically center child text
+                                            align_items: AlignItems::Center,
+                                            ..default()
+                                        },
+                                        border_color: BorderColor(Color::BLACK),
+                                        background_color: NORMAL_BUTTON.into(),
+                                        ..default()
+                                    })
+                                    .insert(BuildingButton {
+                                        building_type: BuildingType::InserterType,
+                                    })
+                                    .with_children(|parent| {
+                                        parent.spawn(TextBundle::from_section(
+                                            "Inserter",
                                             TextStyle {
                                                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                                                 font_size: 10.0,

@@ -110,7 +110,6 @@ pub fn discover_world_system(
                         100,
                         &mut commands,
                         &mut asset_server,
-                        &mut shapes,
                     );
                     world_grid.cells.insert(
                         grid_position,

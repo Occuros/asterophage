@@ -22,7 +22,7 @@ impl YellowBileItem {
         mut shapes: &mut ShapeCommands,
     ) -> Entity {
         shapes.reset = true;
-        shapes.transform = Transform::from_translation(position + Vec3::Y * 0.1);
+        shapes.transform = Transform::from_translation(position + Vec3::Y * 0.2);
         shapes.color = Color::YELLOW;
         shapes.rotate_x(TAU * 0.25);
         shapes.rotate(rotation);
@@ -38,16 +38,7 @@ impl YellowBileResource {
         amount: i32,
         commands: &mut Commands,
         asset_server: &mut AssetServer,
-        mut _shapes: &mut ShapeCommands,
     ) -> Entity {
-        // shapes.reset = true;
-        // shapes.transform = Transform::from_translation(position + Vec3::Y * 0.01);
-        // shapes.color = Color::YELLOW;
-        // shapes.rotate_x(TAU * 0.25);
-        // shapes.rotate(rotation);
-        // shapes.circle(0.10).insert(YellowBile {
-        //     amount
-        // });
         let model = asset_server.load("models/bile-node.glb#Scene0");
         commands
             .spawn((

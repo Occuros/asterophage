@@ -16,7 +16,7 @@ impl Plugin for PlayerPlugin {
                     move_player,
                     move_camera_system.after(move_player),
                     move_light_system.after(move_player),
-                    shoot,
+                    // shoot,
                     life_time_system,
                     bullet_collisions_system,
                 ).run_if(in_state(AppState::Game))
