@@ -1,10 +1,15 @@
 use std::f32::consts::TAU;
+use std::ops::Div;
 use crate::building::building_components::*;
 use crate::general::Pastel;
 use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::*;
 use bevy::prelude::*;
+use bevy_editor_pls::egui::Painter;
+use bevy_spatial::SpatialAccess;
 use bevy_vector_shapes::prelude::*;
+use crate::general::general_components::Gizmodius;
+use crate::SpatialTree;
 use crate::utilities::utility_methods::find_child_with_name;
 use crate::world_grid::components::yellow_bile::YellowBileItem;
 
@@ -391,6 +396,32 @@ pub fn extract_resources_system(
 
             belt.item = Some(item_entity);
         }
+    }
+}
+
+pub fn spatial_belt_system(
+    mut belt_q: Query<(&mut BeltElement, &Transform), (Without<YellowBileItem>, Without<Preview>)>,
+    mut item_q: Query<&mut Transform, With<YellowBileItem>>,
+    time: Res<Time>,
+    tree: Res<SpatialTree>,
+    mut painter: ShapePainter,
+    mut gizmos: Gizmos<Gizmodius>,
+
+
+) {
+    painter.transform.rotate_x(TAU * 0.25);
+
+    for (belt, belt_transform) in belt_q.iter() {
+        painter.transform.translation = belt_transform.translation + Vec3::Y * 0.15;
+        // painter.;
+        gizmos.sphere(belt_transform.translation, Quat::IDENTITY, 0.3, Color::WHITE);
+        for (position, item_entity) in tree.within_distance(belt_transform.translation, 0.5) {
+            if (position.x - belt_transform.translation.x).abs() < 0.25 && (position.z - belt_transform.translation.z).abs() < 0.25 {
+                let Ok(mut item_transform) = item_q.get_mut(item_entity.unwrap()) else {continue};
+                item_transform.translation += -belt_transform.forward() * belt.speed * time.delta_seconds();
+            }
+
+        };
     }
 }
 

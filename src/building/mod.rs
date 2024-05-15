@@ -26,7 +26,9 @@ impl Plugin for BuildingPlugin {
             .add_systems(Update, remove_building_system)
             .add_systems(Update, respond_to_belt_element_removal.after(remove_building_system))
             .add_systems(Update, extract_resources_system)
-            .add_systems(Update, belt_system)
+            // .add_systems(Update, belt_system)
+            .add_systems(Update, spatial_belt_system)
+
             .add_systems(Update, inserter_animation_system)
             .add_systems(Update, inserter_system)
 

@@ -4,6 +4,7 @@ use bevy::math::{Quat, Vec3};
 use bevy::prelude::{Color, Commands, Component, default, Entity, SceneBundle, Transform};
 use bevy_vector_shapes::painter::ShapeCommands;
 use bevy_vector_shapes::prelude::*;
+use crate::general::general_components::SpatiallyTracked;
 
 #[derive(Component, Default)]
 pub struct YellowBileResource {
@@ -22,11 +23,11 @@ impl YellowBileItem {
         mut shapes: &mut ShapeCommands,
     ) -> Entity {
         shapes.reset = true;
-        shapes.transform = Transform::from_translation(position + Vec3::Y * 0.2);
+        shapes.transform = Transform::from_translation(position + Vec3::Y * 0.1);
         shapes.color = Color::YELLOW;
         shapes.rotate_x(TAU * 0.25);
         shapes.rotate(rotation);
-        shapes.circle(0.05).insert(YellowBileItem {}).id()
+        shapes.circle(0.05).insert(YellowBileItem {}).insert(SpatiallyTracked{}).id()
     }
 }
 

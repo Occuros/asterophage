@@ -11,9 +11,12 @@ use bevy_mod_billboard::prelude::*;
 use bevy_turborand::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use bevy_editor_pls::prelude::*;
+use bevy_spatial::AutomaticUpdate;
+use bevy_spatial::kdtree::KDTree3;
 use dotenv::dotenv;
 use crate::building::BuildingPlugin;
 use crate::debug::SmallDebugPlugin;
+use crate::general::general_components::SpatiallyTracked;
 use crate::general::GeneralPlugin;
 use crate::player::PlayerPlugin;
 use crate::world_grid::WorldGridPlugin;
@@ -29,6 +32,7 @@ pub enum AppState {
 #[derive(Component, Debug, Clone)]
 pub struct MainCamera {}
 
+pub type SpatialTree = KDTree3<SpatiallyTracked>; // type alias for later
 
 fn main() {
     dotenv().ok();
@@ -39,7 +43,8 @@ fn main() {
         .add_plugins(EditorPlugin::default())
         .add_plugins(ShapePlugin::default())
         .add_plugins(RngPlugin::new().with_rng_seed(135))
-        // .add_plugins(bevy_framepace::FramepacePlugin)
+        .add_plugins(AutomaticUpdate::<SpatiallyTracked>::new())
+                         // .add_plugins(bevy_framepace::FramepacePlugin)
         .init_state::<AppState>()
         .add_systems(Startup, setup)
         .add_plugins(GeneralPlugin)

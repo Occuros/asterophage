@@ -166,7 +166,7 @@ impl BeltElement {
             .with_children(|parent| {
                 parent.spawn(SceneBundle {
                     scene: model,
-                    transform: Transform::from_translation(Vec3::Y * -0.05)
+                    transform: Transform::from_translation(Vec3::Y * -0.1)
                         .with_rotation(Quat::from_rotation_y(TAU * 0.25)),
                     ..default()
                 });

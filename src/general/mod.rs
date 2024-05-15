@@ -1,17 +1,21 @@
 use bevy::prelude::*;
 use crate::general::general_systems::*;
 use crate::{MainCamera, setup};
+use crate::general::general_components::{Gizmodius, SpatiallyTracked};
 use crate::player::player_components::GameCursor;
 
 mod general_systems;
-mod general_components;
+pub mod general_components;
 
 pub struct GeneralPlugin;
 
 impl Plugin for GeneralPlugin {
     fn build(&self, app: &mut App) {
         app
+            .register_type::<SpatiallyTracked>()
             .insert_resource(GameCursor::default())
+            .init_gizmo_group::<Gizmodius>()
+
             .add_systems(PostUpdate, update_cursor_system)
             .add_systems(Update, button_highlight_system)
             .add_systems(Update, building_ui_selection_system)
