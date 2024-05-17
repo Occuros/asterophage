@@ -17,7 +17,7 @@ pub fn spawn_player(
     // cube
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 0.50 })),
+            mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.25)})),
             material: materials.add(StandardMaterial::from(Color::rgb(0.8, 0.7, 0.6))),
             transform: Transform::from_xyz(0.0, 0.25, 0.0),
             ..default()

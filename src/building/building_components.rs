@@ -6,6 +6,7 @@ use bevy_vector_shapes::prelude::*;
 use std::f32::consts::TAU;
 use std::time::Duration;
 use bevy::ecs::system::{EntityCommand, EntityCommands};
+use crate::general::general_components::SpatiallyTracked;
 
 #[derive(Default, Reflect, Clone, Copy, PartialEq)]
 pub enum BuildingType {
@@ -13,7 +14,8 @@ pub enum BuildingType {
     None,
     Extractor,
     ConveyorBelt,
-    InserterType
+    InserterType,
+    BlackHoleType,
 }
 
 #[derive(Default, Reflect, Component)]
@@ -51,6 +53,8 @@ pub struct Building {
     pub building_type: BuildingType,
 }
 
+
+
 impl Building {
     pub fn spawn(
         building_type: BuildingType,
@@ -73,7 +77,10 @@ impl Building {
             BuildingType::ConveyorBelt => Some(BeltElement::spawn(
                 position, rotation, size, commands, shapes, asset_server,
             )),
-            BuildingType::InserterType => Some(Inserter::spawn(position, rotation, size, commands, asset_server))
+            BuildingType::InserterType => Some(Inserter::spawn(position, rotation, size, commands, asset_server)),
+            BuildingType::BlackHoleType => {
+                Some(BlackHole::spawn(position, rotation, size, commands, asset_server))
+            }
         }
     }
 }
@@ -132,6 +139,10 @@ pub struct BeltElement {
     pub conveyor_belt: Option<Entity>,
     pub item: Option<Entity>,
     pub item_reached_center: bool,
+    pub is_corner: bool,
+    pub center: Vec3,
+    pub is_right: bool,
+
 }
 
 impl BeltElement {
@@ -149,8 +160,8 @@ impl BeltElement {
             .spawn((
                 SpatialBundle {
                     transform: Transform::from_translation(position)
-                        .with_rotation(rotation)
-                        .with_scale(Vec3::splat(size)),
+                        .with_rotation(rotation),
+                        // .with_scale(Vec3::splat(size)),
                     ..default()
                 },
                 BeltElement {
@@ -162,12 +173,14 @@ impl BeltElement {
                     building_type: BuildingType::ConveyorBelt,
                 },
                 Name::new("Belt Piece"),
+                // SpatiallyTracked{},
             ))
             .with_children(|parent| {
                 parent.spawn(SceneBundle {
                     scene: model,
-                    transform: Transform::from_translation(Vec3::Y * -0.1)
-                        .with_rotation(Quat::from_rotation_y(TAU * 0.25)),
+                    transform: Transform::from_translation(Vec3::Y * 0.0)
+                        .with_rotation(Quat::from_rotation_y(TAU * 0.25))
+                        .with_scale(Vec3::splat(size)),
                     ..default()
                 });
             })
@@ -176,12 +189,12 @@ impl BeltElement {
                 shapes.transform = Transform::from_rotation(
                     Quat::from_rotation_y(TAU * 0.25) * Quat::from_rotation_x(TAU * 0.25) * Quat::from_rotation_z(TAU * 0.25),
                 )
-                    .with_translation(Vec3::Y * 0.25);
+                    .with_translation(Vec3::new(0.0,0.15,0.05));
                 shapes.thickness = 0.01;
                 shapes.color = Color::YELLOW.pastel();
-                shapes.ngon(3.0, 0.2);
-                shapes.translate(Vec3::Y * -0.15);
-                shapes.rect(Vec2::new(0.1, 0.3));
+                shapes.ngon(3.0, 0.1);
+                shapes.translate(Vec3::Y * -0.13);
+                shapes.rect(Vec2::new(0.05, 0.15));
             })
             .id();
         entity
@@ -318,4 +331,41 @@ pub struct BeltPiece {
     pub entity: Entity,
     pub grid_rotation: GridRotation,
     pub grid_position: GridPosition,
+}
+
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+pub struct BlackHole {
+
+}
+
+impl BlackHole {
+    pub fn spawn(
+        position: Vec3,
+        rotation: Quat,
+        size: f32,
+        commands: &mut Commands,
+        asset_server: &mut AssetServer,
+    ) -> Entity {
+        let model = asset_server.load("models/tower-top.glb#Scene0");
+        let entity =  commands
+            .spawn((
+                SceneBundle {
+                    scene: model,
+                    transform: Transform::from_translation(position)
+                        .with_rotation(rotation)
+                        .with_scale(Vec3::splat(size)),
+                    ..default()
+                },
+                BlackHole {
+                    ..default()
+                },
+                Building {
+                    building_type: BuildingType::BlackHoleType,
+                },
+                Name::new("BlackHole"),
+            ))
+            .id();
+        entity
+    }
 }

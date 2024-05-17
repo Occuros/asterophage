@@ -1,13 +1,17 @@
-use std::f32::consts::TAU;
+use std::f32::consts::{PI, TAU};
 use std::ops::Div;
+use std::time::Duration;
 use crate::building::building_components::*;
 use crate::general::Pastel;
 use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::*;
 use bevy::prelude::*;
+use bevy::utils::tracing::field::debug;
 use bevy_editor_pls::egui::Painter;
 use bevy_spatial::SpatialAccess;
 use bevy_vector_shapes::prelude::*;
+use bevy_xpbd_3d::parry::utils::center;
+use crate::debug::debug_components::DrawGizmoEvent;
 use crate::general::general_components::Gizmodius;
 use crate::SpatialTree;
 use crate::utilities::utility_methods::find_child_with_name;
@@ -30,7 +34,7 @@ pub fn place_building_system(
     if game_cursor.preview_entity.is_none() {
         return;
     };
-    if !input.just_pressed(MouseButton::Left) {
+    if !input.pressed(MouseButton::Left) {
         return;
     }
     let grid_size = world_grid.grid_size;
@@ -130,7 +134,12 @@ pub fn respond_to_conveyor_belt_placement_event(
     mut commands: Commands,
     mut building_placed_event: EventReader<BuildingPlacedEvent>,
     mut belt_q: Query<&mut BeltElement>,
+    transform_q: Query<&Transform>,
     mut conveyor_placed_event: EventWriter<ConveyorPlacedEvent>,
+    tree: Res<SpatialTree>,
+    mut gizmos: Gizmos<Gizmodius>,
+    mut gizmo_event: EventWriter<DrawGizmoEvent>,
+    mut item_q: Query<&mut YellowBileItem>,
 ) {
     for building_placed in building_placed_event.read() {
         if !matches!(building_placed.building_type, BuildingType::ConveyorBelt) {
@@ -141,9 +150,81 @@ pub fn respond_to_conveyor_belt_placement_event(
             entity: building_placed.entity,
             grid_position: building_placed.grid_position,
         };
-
         let conveyor_belt = ConveyorBelt::spawn_new(&mut commands, belt_piece);
-        let mut belt_element = belt_q.get_mut(building_placed.entity).unwrap();
+        let Ok(mut belt_element) = belt_q.get_mut(building_placed.entity) else {continue};
+        let Ok(belt_transform) = transform_q.get(building_placed.entity) else {continue};
+
+        let right_position = belt_transform.translation + belt_transform.right() * 0.5 - Vec3::Y * 0.1;
+        // gizmo_event.send(DrawGizmoEvent::Sphere {
+        //     position: right_position,
+        //     radius: 0.5,
+        //     color: Color::BLACK,
+        //     timer: Timer::new(Duration::from_secs_f32(5.0), TimerMode::Once),
+        // });
+        for (pos, entity) in tree.within_distance(belt_transform.translation, 0.3) {
+            let Some(entity) = entity else {continue};
+            let Ok(mut item) = item_q.get_mut(entity) else {continue};
+            item.velocity = Vec3::ZERO;
+        }
+
+        for (pos, other_belt_entity) in tree.within_distance(right_position, 0.5) {
+            let Some(other_belt_entity) = other_belt_entity else {continue};
+            let Ok(other_belt_transform) = transform_q.get(other_belt_entity) else {continue};
+            let mut to_center = belt_transform.translation - other_belt_transform.translation;
+            to_center.y = 0.0;
+            to_center = to_center.normalize();
+            // gizmo_event.send(DrawGizmoEvent::Arrow {
+            //     start_position: other_belt_transform.translation + Vec3::Z * 0.1 + Vec3::Y + 0.1,
+            //     end_position: belt_transform.translation + Vec3::Z * 0.1 + Vec3::Y + 0.1,
+            //     color: Color::BLACK,
+            //     timer: Timer::from_seconds(15.0, TimerMode::Once),
+            // });
+            //
+            // gizmo_event.send(DrawGizmoEvent::Arrow {
+            //     start_position: other_belt_transform.translation,
+            //     end_position: other_belt_transform.translation + other_belt_transform.local_z() * 1.0,
+            //     color: Color::RED,
+            //     timer: Timer::from_seconds(15.0, TimerMode::Once),
+            // });
+
+            if other_belt_transform.forward().dot(-to_center) > 0.99 {
+                debug!("we have a corner on the right");
+                belt_element.is_corner = true;
+                belt_element.is_right = false;
+                let mut center = belt_transform.translation;
+                center += belt_transform.right() * 0.25;
+                center -= belt_transform.forward() * 0.25;
+                belt_element.center = center;
+            }
+        }
+
+        let left_position = belt_transform.translation + belt_transform.left() * 0.5 - Vec3::Y * 0.1;
+        // gizmo_event.send(DrawGizmoEvent::Sphere {
+        //     position: left_position,
+        //     radius: 0.5,
+        //     color: Color::GREEN,
+        //     timer: Timer::new(Duration::from_secs_f32(5.0), TimerMode::Once),
+        // });
+
+        for (_, other_belt_entity) in tree.within_distance(left_position, 0.5) {
+            let Some(other_belt_entity) = other_belt_entity else {continue};
+            let Ok(other_belt_transform) = transform_q.get(other_belt_entity) else {continue};
+            let mut to_center = belt_transform.translation - other_belt_transform.translation;
+            to_center.y = 0.0;
+            to_center = to_center.normalize();
+            if other_belt_transform.local_z().dot(to_center) > 0.99 {
+                debug!("we have a corner on the left");
+                belt_element.is_corner = true;
+                belt_element.is_right = true;
+
+                let mut center = belt_transform.translation;
+                center -= belt_transform.right() * 0.25;
+                center -= belt_transform.forward() * 0.25;
+                belt_element.center = center;
+            }
+        }
+
+
         belt_element.conveyor_belt = Some(conveyor_belt);
         conveyor_placed_event.send(ConveyorPlacedEvent {
             entity: conveyor_belt,
@@ -179,8 +260,6 @@ pub fn respond_to_belt_element_removal(
             let before = conveyor.belt_pieces[0..index].to_vec();
             let after = conveyor.belt_pieces[index + 1..].to_vec();
             conveyor.belt_pieces = before;
-
-
             let new_conveyor_entity = commands.spawn(ConveyorBelt {
                 belt_pieces: after[..].to_vec(),
                 ..default()
@@ -365,65 +444,59 @@ pub fn extract_resources_system(
     world_grid: Res<WorldGrid>,
     mut extractor_q: Query<(&mut Extractor, &Transform), With<Active>>,
     mut belt_q: Query<&mut BeltElement>,
+    item_q: Query<&YellowBileItem>,
     mut shapes: ShapeCommands,
+    spatial_tree: Res<SpatialTree>
 ) {
     for (mut extractor, transform) in extractor_q.iter_mut() {
         extractor.timer.tick(time.delta());
         if !extractor.timer.finished() { continue; }
-        let grid_position = world_grid.get_grid_position_from_world_position(transform.translation);
-        let grid_rotation = transform.grid_rotation();
-        let potential_positions = grid_position.get_all_surrounding_positions();
-        for p in potential_positions.iter() {
-            let Some(cell) = world_grid.cells.get(p) else { continue; };
-            let belt = match cell.surface_layer {
-                SurfaceLayer::Empty => {
-                    None
-                }
-                SurfaceLayer::Building { entity } => {
-                    belt_q.get_mut(entity).ok()
-                }
-                SurfaceLayer::Resource { .. } => {
-                    None
-                }
-            };
-            let Some(mut belt) = belt else { continue; };
-            if belt.item.is_some() { continue; }
+        let drop_position = transform.translation + transform.forward() * 0.3 + Vec3::Y * 0.1;
+        let mut can_extract_item = true;
+        for ((position, entity)) in spatial_tree.within_distance(drop_position, 0.25).iter() {
+            let Some(entity) = *entity else {continue};
+            if item_q.get(entity).is_ok() {
+                can_extract_item = false;
+                break
+            }
+        }
+
+        if !can_extract_item {continue};
+
             let item_entity = YellowBileItem::spawn(
-                world_grid.grid_to_world(&p),
+                drop_position,
                 Quat::IDENTITY,
                 &mut shapes,
             );
-
-            belt.item = Some(item_entity);
-        }
+        // let grid_position = world_grid.get_grid_position_from_world_position(transform.translation);
+        // let grid_rotation = transform.grid_rotation();
+        // let potential_positions = grid_position.get_all_surrounding_positions();
+        // for p in potential_positions.iter() {
+        //     let Some(cell) = world_grid.cells.get(p) else { continue; };
+        //     let belt = match cell.surface_layer {
+        //         SurfaceLayer::Empty => {
+        //             None
+        //         }
+        //         SurfaceLayer::Building { entity } => {
+        //             belt_q.get_mut(entity).ok()
+        //         }
+        //         SurfaceLayer::Resource { .. } => {
+        //             None
+        //         }
+        //     };
+        //     let Some(mut belt) = belt else { continue; };
+        //     if belt.item.is_some() { continue; }
+        //     let item_entity = YellowBileItem::spawn(
+        //         world_grid.grid_to_world(&p),
+        //         Quat::IDENTITY,
+        //         &mut shapes,
+        //     );
+        //
+        //     belt.item = Some(item_entity);
+        // }
     }
 }
 
-pub fn spatial_belt_system(
-    mut belt_q: Query<(&mut BeltElement, &Transform), (Without<YellowBileItem>, Without<Preview>)>,
-    mut item_q: Query<&mut Transform, With<YellowBileItem>>,
-    time: Res<Time>,
-    tree: Res<SpatialTree>,
-    mut painter: ShapePainter,
-    mut gizmos: Gizmos<Gizmodius>,
-
-
-) {
-    painter.transform.rotate_x(TAU * 0.25);
-
-    for (belt, belt_transform) in belt_q.iter() {
-        painter.transform.translation = belt_transform.translation + Vec3::Y * 0.15;
-        // painter.;
-        gizmos.sphere(belt_transform.translation, Quat::IDENTITY, 0.3, Color::WHITE);
-        for (position, item_entity) in tree.within_distance(belt_transform.translation, 0.5) {
-            if (position.x - belt_transform.translation.x).abs() < 0.25 && (position.z - belt_transform.translation.z).abs() < 0.25 {
-                let Ok(mut item_transform) = item_q.get_mut(item_entity.unwrap()) else {continue};
-                item_transform.translation += -belt_transform.forward() * belt.speed * time.delta_seconds();
-            }
-
-        };
-    }
-}
 
 pub fn belt_system(
     time: Res<Time>,

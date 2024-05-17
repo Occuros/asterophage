@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_editor_pls::editor::Editor;
 use crate::general::general_systems::*;
 use crate::{MainCamera, setup};
 use crate::general::general_components::{Gizmodius, SpatiallyTracked};
@@ -16,7 +17,7 @@ impl Plugin for GeneralPlugin {
             .insert_resource(GameCursor::default())
             .init_gizmo_group::<Gizmodius>()
 
-            .add_systems(PostUpdate, update_cursor_system)
+            .add_systems(PostUpdate, update_cursor_system.run_if(editor_not_active))
             .add_systems(Update, button_highlight_system)
             .add_systems(Update, building_ui_selection_system)
             .add_systems(Update, remove_preview_building_system)
@@ -27,6 +28,9 @@ impl Plugin for GeneralPlugin {
     }
 }
 
+fn editor_not_active(editor: Res<Editor>) ->bool {
+    !editor.active()
+}
 
 pub trait Pastel {
     fn pastel(&self) -> Color;

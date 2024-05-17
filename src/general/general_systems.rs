@@ -177,6 +177,36 @@ pub fn setup_menu(
                                             },
                                         ));
                                     });
+
+                                parent
+                                    .spawn(ButtonBundle {
+                                        style: Style {
+                                            width: Val::Px(50.),
+                                            height: Val::Px(50.0),
+                                            border: UiRect::all(Val::Px(1.0)),
+                                            // horizontally center child text
+                                            justify_content: JustifyContent::Center,
+                                            // vertically center child text
+                                            align_items: AlignItems::Center,
+                                            ..default()
+                                        },
+                                        border_color: BorderColor(Color::BLACK),
+                                        background_color: NORMAL_BUTTON.into(),
+                                        ..default()
+                                    })
+                                    .insert(BuildingButton {
+                                        building_type: BuildingType::BlackHoleType,
+                                    })
+                                    .with_children(|parent| {
+                                        parent.spawn(TextBundle::from_section(
+                                            "BlackHole",
+                                            TextStyle {
+                                                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                                                font_size: 10.0,
+                                                color: Color::rgb(0.9, 0.9, 0.9),
+                                            },
+                                        ));
+                                    });
                             });
                     });
             });
@@ -311,6 +341,5 @@ pub fn rotate_preview_item_system(
     let mut transform = tranform_q.get_mut(game_cursor.preview_entity.unwrap()).unwrap();
 
     transform.rotate_y(-TAU * 0.25);
-    info!("piece is rotated {:?}", transform.grid_rotation());
 }
 

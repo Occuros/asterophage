@@ -33,6 +33,11 @@ pub enum AppState {
 pub struct MainCamera {}
 
 pub type SpatialTree = KDTree3<SpatiallyTracked>; // type alias for later
+pub type ItemTree = KDTree3<TrackedItem>;
+#[derive(Component, Default, Reflect)]
+pub struct TrackedItem {
+
+}
 
 fn main() {
     dotenv().ok();
@@ -44,7 +49,9 @@ fn main() {
         .add_plugins(ShapePlugin::default())
         .add_plugins(RngPlugin::new().with_rng_seed(135))
         .add_plugins(AutomaticUpdate::<SpatiallyTracked>::new())
-                         // .add_plugins(bevy_framepace::FramepacePlugin)
+        .add_plugins(AutomaticUpdate::<TrackedItem>::new())
+
+        // .add_plugins(bevy_framepace::FramepacePlugin)
         .init_state::<AppState>()
         .add_systems(Startup, setup)
         .add_plugins(GeneralPlugin)

@@ -1,19 +1,23 @@
 use std::f32::consts::TAU;
 use bevy::asset::AssetServer;
 use bevy::math::{Quat, Vec3};
-use bevy::prelude::{Color, Commands, Component, default, Entity, SceneBundle, Transform};
+use bevy::prelude::{Color, Commands, Component, default, Entity, Name, Reflect, SceneBundle, Transform};
 use bevy_vector_shapes::painter::ShapeCommands;
 use bevy_vector_shapes::prelude::*;
 use crate::general::general_components::SpatiallyTracked;
+use crate::TrackedItem;
 
 #[derive(Component, Default)]
 pub struct YellowBileResource {
     pub amount: i32,
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Reflect)]
 pub struct YellowBileItem {
-
+    pub size: f32,
+    pub radius: f32,
+    pub velocity: Vec3,
+    pub stuck_counter: i32,
 }
 
 impl YellowBileItem {
@@ -24,10 +28,15 @@ impl YellowBileItem {
     ) -> Entity {
         shapes.reset = true;
         shapes.transform = Transform::from_translation(position + Vec3::Y * 0.1);
-        shapes.color = Color::YELLOW;
+        shapes.color = Color::BLACK;
         shapes.rotate_x(TAU * 0.25);
         shapes.rotate(rotation);
-        shapes.circle(0.05).insert(YellowBileItem {}).insert(SpatiallyTracked{}).id()
+        shapes.circle(0.05)
+            .insert(YellowBileItem {size: 0.09,..default()})
+            .insert(SpatiallyTracked{})
+            .insert(TrackedItem{})
+            .insert(Name::new ("Item"))
+            .id()
     }
 }
 
