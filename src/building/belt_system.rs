@@ -33,11 +33,11 @@ pub fn spatial_belt_system(
                 let Ok((mut item_transform, mut item)) = item_q.get_mut(item_entity) else { continue; };
 
 
-                // let next_position = item_transform.translation + item.velocity.normalize() * (belt.speed) * time.delta_seconds();
-                let next_position = item_transform.translation + item.velocity.normalize() * 0.1;
+                // let next_position = item_transform.translation + item.velocity.normalize() * (belt.speed * 2.0) * time.delta_seconds();
+                let next_position = item_transform.translation + item.velocity.normalize() * 0.05;
 
                 let mut can_move = true;
-                for (other_pos, other_item) in tree.within_distance(next_position, 0.1).iter() {
+                for (other_pos, other_item) in tree.within_distance(next_position, 0.05).iter() {
                     let Some(other_item) = *other_item else { continue; };
                     if other_item == item_entity { continue; }
                     if other_pos.sub(next_position).normalize().dot(item.velocity.normalize()) < 0.0 { continue; }
