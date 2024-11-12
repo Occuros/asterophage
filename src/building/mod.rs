@@ -1,11 +1,12 @@
 use crate::building::building_systems::*;
 use bevy::prelude::*;
 use crate::building::building_components::{BuildingPlacedEvent, BuildingRemovedEvent, ConveyorPlacedEvent, Inserter};
-
+use crate::building::conveyor_belt_systems::conveyor_system;
 use self::building_components::{Building, Extractor, BeltElement, ConveyorBelt};
 
 pub mod building_components;
 mod building_systems;
+mod conveyor_belt_systems;
 
 pub struct BuildingPlugin;
 
@@ -26,7 +27,6 @@ impl Plugin for BuildingPlugin {
             .add_systems(Update, remove_building_system)
             .add_systems(Update, respond_to_belt_element_removal.after(remove_building_system))
             .add_systems(Update, extract_resources_system)
-            .add_systems(Update, belt_system)
             .add_systems(Update, inserter_animation_system)
             .add_systems(Update, inserter_system)
             .add_systems(Update, conveyor_system)

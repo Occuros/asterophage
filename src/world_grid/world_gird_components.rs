@@ -1,5 +1,4 @@
 use bevy::{prelude::*, utils::HashMap};
-use bevy_vector_shapes::prelude::*;
 use std::{f32::consts::TAU, f32::consts::PI, ops};
 
 #[derive(Component, Reflect, Hash, Eq, PartialEq, Debug, Clone, Default, Copy)]

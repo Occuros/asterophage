@@ -6,6 +6,7 @@ use bevy_vector_shapes::painter::ShapeCommands;
 use bevy_vector_shapes::prelude::*;
 
 #[derive(Component, Default)]
+#[allow(dead_code)]
 pub struct YellowBileResource {
     pub amount: i32,
 }
@@ -19,7 +20,7 @@ impl YellowBileItem {
     pub fn spawn(
         position: Vec3,
         rotation: Quat,
-        mut shapes: &mut ShapeCommands,
+        shapes: &mut ShapeCommands,
     ) -> Entity {
         shapes.reset = true;
         shapes.transform = Transform::from_translation(position + Vec3::Y * 0.2);

@@ -25,7 +25,7 @@ impl CloneEntity {
     // - the world does not have a type registry
     // - the source or destination entity do not exist
     fn clone_entity(self, world: &mut World) {
-        let components = {
+        let _ = {
             let registry = world.get_resource::<AppTypeRegistry>().unwrap().read();
          world
                 .get_entity(self.source)
@@ -43,7 +43,7 @@ impl CloneEntity {
                 .filter_map(|type_id| {
                     let type_registry_entry = registry
                     .get(type_id);
-                    
+
                     match type_registry_entry {
                         Some(r) => {
                             let reflect_component = r.data::<ReflectComponent>();
@@ -60,25 +60,13 @@ impl CloneEntity {
                             None
                         },
                     }
-           
 
-                
+
+
                 })
                 .collect::<Vec<_>>()
         };
 
-        
-
-        // for component in components {
-        //     let source = component
-        //         .reflect(world.get_entity(self.source).unwrap())
-        //         .unwrap()
-        //         .clone_value();
-
-            // let mut destination = world.get_entity_mut(self.destination).unwrap();
-
-            // component.apply_or_insert(&mut destination, &*source);
-        // }
     }
 }
 

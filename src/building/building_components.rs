@@ -5,8 +5,6 @@ use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use std::f32::consts::TAU;
 use std::time::Duration;
-use bevy::ecs::system::{EntityCommand, EntityCommands};
-use bevy::reflect::List;
 
 #[derive(Default, Reflect, Clone, Copy, PartialEq)]
 pub enum BuildingType {
@@ -246,26 +244,26 @@ pub struct ConveyorBelt {
     //belt pieces first is at the start, last at the end
     pub belt_pieces: Vec<BeltPiece>,
     pub items: Vec<BeltItem>,
-    // pub segments: Vec<Segment>
-}
-
-#[derive(Component, Default, Reflect)]
-#[reflect(Component)]
-pub struct ConveyorSegments {
     pub segments: Vec<Segment>,
 }
 
-impl ConveyorSegments {
-    pub fn get_segment_index_for_position(&self, position: Vec3) -> Option<usize> {
-        for i in 0..self.segments.len() {
-            let segment = &self.segments[i];
-            if segment.point_on_segment(position) {
-                return Some(i);
-            }
-        }
-        None
-    }
-}
+// #[derive(Component, Default, Reflect)]
+// #[reflect(Component)]
+// pub struct ConveyorSegments {
+//     pub segments: Vec<Segment>,
+// }
+
+// impl ConveyorSegments {
+//     pub fn get_segment_index_for_position(&self, position: Vec3) -> Option<usize> {
+//         for i in 0..self.segments.len() {
+//             let segment = &self.segments[i];
+//             if segment.point_on_segment(position) {
+//                 return Some(i);
+//             }
+//         }
+//         None
+//     }
+// }
 
 
 #[derive(Default, Debug, Reflect, Clone)]
@@ -334,10 +332,6 @@ impl ConveyorBelt {
         }
     }
 
-    pub fn try_add_item(item_entity: Entity, position: Vec3) -> bool {
-        false
-    }
-
     pub fn spawn_new(commands: &mut Commands, belt_piece: BeltPiece) -> Entity {
         let conveyor_belt_entity = commands.spawn((
             ConveyorBelt {
@@ -345,7 +339,6 @@ impl ConveyorBelt {
                 ..default()
             },
             Name::new("Conveyor"),
-            ConveyorSegments::default(),
         )).id();
         conveyor_belt_entity
     }
@@ -387,9 +380,9 @@ impl ConveyorBelt {
             < 2
     }
 
-    pub fn create_segments(&self, world_grid: &WorldGrid) -> Vec<Segment> {
-        let mut segments = vec![];
-        println!("creating segments");
+    pub fn create_segments(&mut self, world_grid: &WorldGrid) {
+        self.segments.clear();
+        let segments = &mut self.segments;
         let mut current_segment = Segment::default();
         let mut previous_belt = None;
         for belt in &self.belt_pieces {
@@ -410,8 +403,6 @@ impl ConveyorBelt {
             current_segment.end_position += direction * 0.5;
             current_segment.direction = direction;
             current_segment.length = (current_segment.end_position - current_segment.start_position).length();
-            println!("added segments {:?}", current_segment);
-
             segments.push(current_segment);
             previous_belt = None;
             current_segment = Segment::default();
@@ -427,10 +418,17 @@ impl ConveyorBelt {
             println!("added segments {:?}", current_segment);
             segments.push(current_segment);
         }
-        segments
     }
 
-
+    pub fn get_segment_index_for_position(&self, position: Vec3) -> Option<usize> {
+        for i in 0..self.segments.len() {
+            let segment = &self.segments[i];
+            if segment.point_on_segment(position) {
+                return Some(i);
+            }
+        }
+        None
+    }
 }
 
 #[derive(Reflect, Clone, Copy, Debug)]

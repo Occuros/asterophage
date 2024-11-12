@@ -3,12 +3,11 @@ use bevy::prelude::*;
 use bevy::ui::Val::Px;
 use bevy_vector_shapes::painter::ShapePainter;
 use bevy_vector_shapes::prelude::*;
-use log::Level::Debug;
-use crate::building::building_components::{BeltElement, ConveyorBelt};
+use crate::building::building_components::*;
 use crate::debug::debug_components::*;
 use crate::general::Pastel;
 use crate::player::player_components::GameCursor;
-use crate::world_grid::world_gird_components::{GridPiece, WorldGrid};
+use crate::world_grid::world_gird_components::*;
 
 pub fn debug_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
@@ -69,53 +68,6 @@ pub fn change_debug_text_system(
         text.sections[0].value = event.text.to_owned();
     }
 }
-
-pub fn draw_belt_forward(
-    belt_q: Query<&Transform, With<BeltElement>>,
-    mut painter: ShapePainter,
-    world_grid: Res<WorldGrid>
-) {
-    // painter.thickness = 0.5;
-    // painter.color = Color::MIDNIGHT_BLUE;
-    // painter.cap = Cap::None;
-    // painter.line(Vec3::new(-1.0, 1.0, 0.0), Vec3::new(1.0, 1.0, 0.0));
-
-    painter.line(Vec3::new(-1.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0));
-    for t in belt_q.iter() {
-        painter.reset();
-        painter.color = Color::WHITE;
-        painter.thickness = 0.1;
-        painter.cap = Cap::Round;
-        painter.transform.translation = t.translation + Vec3::Y * 0.01 + *t.local_z() *0.1;
-        painter.transform.rotation = t.rotation;
-        let start = Vec3::ZERO + Vec3::Y * 0.01;
-        let end = start + Vec3::Z * 1.0;
-        painter.transform.rotation *= Quat::from_rotation_x(TAU * 0.25);
-
-        painter.rect(Vec2::new(0.1, 0.4));
-
-        // painter.transform.translation = start;
-        // painter.circle(0.1);
-        // painter.color = Color::MIDNIGHT_BLUE;
-        // painter.transform.translation = end;
-        // painter.circle(0.15);
-        // let grid = world_grid.get_grid_position_from_world_position(t.translation);
-        // let grid_forward = grid.get_relative_forward(t.grid_rotation());
-        //
-        // let start = world_grid.grid_to_world(&grid) + Vec3::Y * 0.01;
-        // let end = world_grid.grid_to_world(&grid_forward) + Vec3::Y * 0.01;
-        //
-        // painter.line(start, end);
-
-        // painter.transform.translation = start;
-        // painter.circle(0.1);
-        // painter.color = Color::MIDNIGHT_BLUE;
-        // painter.transform.translation = end;
-        // painter.circle(0.15);
-
-    }
-}
-
 pub fn debug_draw_conveyors(
     mut shapes: ShapePainter,
     conveyor_q: Query<&ConveyorBelt>,

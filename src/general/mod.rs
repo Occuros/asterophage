@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::general::general_systems::*;
-use crate::{MainCamera, setup};
+use crate::setup;
 use crate::player::player_components::GameCursor;
 
 mod general_systems;

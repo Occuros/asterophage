@@ -19,6 +19,7 @@ pub struct Owner {
     pub entity: Option<Entity>,
 }
 
+#[allow(dead_code)]
 impl Bullet {
     pub fn spawn(
         position: Vec3,
@@ -29,9 +30,8 @@ impl Bullet {
         mut materials: ResMut<Assets<StandardMaterial>>,
     ) -> Entity {
         let size = 0.05;
-        let shape = shape::Icosphere {
+        let shape = Sphere {
             radius: size,
-            subdivisions: 12,
         };
         let transform = Transform::from_translation(position).with_rotation(rotation);
         
@@ -45,7 +45,7 @@ impl Bullet {
                 },
                 Bullet {},
                 RigidBody::Dynamic,
-                Collider::ball(size),
+                Collider::sphere(size),
                 LinearVelocity(transform.forward() * 15.0),
                 LifeTime { time_left: 5.0 },
                 GravityScale(0.0),

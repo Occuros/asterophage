@@ -73,7 +73,7 @@ fn setup(
 
 
     for _i in 0..30 {
-        let size = 0.5;
+        let size = 0.25;
         let max_position = 20.0;
         let position = Vec3::new(
             rng.f32_normalized() * max_position,
@@ -84,7 +84,7 @@ fn setup(
         // cube
         let _ = commands.spawn((
             PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 0.50 })),
+                mesh: meshes.add(Mesh::from( Cuboid { half_size: Vec3::splat(size) })),
                 material: materials.add(Color::rgb(0.8, rng.f32(), 0.6)),
                 transform: Transform::from_translation(position),
                 ..default()

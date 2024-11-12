@@ -81,7 +81,6 @@ pub fn discover_world_system(
     player_q: Query<&Transform, With<Player>>,
     mut asset_server: ResMut<AssetServer>,
     resource_settings: Res<ResourceNoiseSettings>,
-    mut shapes: ShapeCommands,
 ) {
     if player_q.get_single().is_err() {
         return;
