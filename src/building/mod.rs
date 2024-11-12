@@ -29,6 +29,7 @@ impl Plugin for BuildingPlugin {
             .add_systems(Update, belt_system)
             .add_systems(Update, inserter_animation_system)
             .add_systems(Update, inserter_system)
+            .add_systems(Update, conveyor_system)
 
             .add_systems(PostUpdate, destroy_building_system)
 

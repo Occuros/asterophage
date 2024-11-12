@@ -4,6 +4,7 @@ use crate::general::Pastel;
 use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::*;
 use bevy::prelude::*;
+use bevy::render::render_resource::encase::private::RuntimeSizedArray;
 use bevy_vector_shapes::prelude::*;
 use crate::utilities::utility_methods::find_child_with_name;
 use crate::world_grid::components::yellow_bile::YellowBileItem;
@@ -197,6 +198,7 @@ pub fn handle_conveyor_placement_system(
     mut belt_q: Query<&mut BeltElement>,
     transform_q: Query<&Transform>,
     mut conveyor_q: Query<&mut ConveyorBelt>,
+    mut conveyor_segments_q: Query<&mut ConveyorSegments>,
 ) {
     for conveyor_placement in belt_element_placed_event.read() {
         let conveyor = conveyor_q.get(conveyor_placement.entity).unwrap();
@@ -232,18 +234,11 @@ pub fn handle_conveyor_placement_system(
             .map(|e| *e)
             .collect::<Vec<_>>();
 
-        for i in 0..conveyors_entities_to_check.len() {
+        for _ in 0..conveyors_entities_to_check.len() {
             let Some(&next_conveyor_entity) = conveyors_entities_to_check.first() else {
                 break;
             };
-            let next_conveyor = conveyor_q.get(next_conveyor_entity).unwrap();
-            // info!(
-            //     "check {} start: {:?} end: {:?}, origin: {:?}",
-            //     i, next_conveyor.start_position, next_conveyor.end_position, grid_position
-            // );
-
             conveyors_entities_to_check.remove(0);
-
             match check_for_conveyor_merge(
                 &mut commands,
                 primary_conveyor_entity,
@@ -259,6 +254,9 @@ pub fn handle_conveyor_placement_system(
                 }
             }
         }
+        let mut conveyor = conveyor_q.get_mut(primary_conveyor_entity).unwrap();
+        let segments = conveyor.create_segments(&world_grid);
+        conveyor_segments_q.get_mut(primary_conveyor_entity).unwrap().segments = segments;
     }
 }
 
@@ -305,9 +303,9 @@ fn check_for_conveyor_merge(
 ) -> Option<Entity> {
     let Ok([mut primary_conveyor, mut secondary_conveyor]) =
         conveyor_q.get_many_mut([primary_conveyor_entity, secondary_conveyor_entity])
-        else {
-            return None;
-        };
+    else {
+        return None;
+    };
     let Some(secondary_end_piece) = secondary_conveyor.belt_pieces.last() else {
         return None;
     };
@@ -360,6 +358,7 @@ pub fn extract_resources_system(
     world_grid: Res<WorldGrid>,
     mut extractor_q: Query<(&mut Extractor, &Transform), With<Active>>,
     mut belt_q: Query<&mut BeltElement>,
+    mut conveyor_q: Query<(&mut ConveyorBelt, &ConveyorSegments)>,
     mut shapes: ShapeCommands,
 ) {
     for (mut extractor, transform) in extractor_q.iter_mut() {
@@ -381,15 +380,93 @@ pub fn extract_resources_system(
                     None
                 }
             };
+
             let Some(mut belt) = belt else { continue; };
-            if belt.item.is_some() { continue; }
+            let Some(conveyor_entity) = belt.conveyor_belt else { continue };
+            let Ok((mut conveyor, conveyor_segments)) = conveyor_q.get_mut(conveyor_entity) else { continue };
+            // conveyor.start_position()
+
+            // if belt.item.is_some() { continue; }
             let item_entity = YellowBileItem::spawn(
                 world_grid.grid_to_world(&p),
                 Quat::IDENTITY,
                 &mut shapes,
             );
 
-            belt.item = Some(item_entity);
+            // belt.item = Some(item_entity);
+
+            let position = world_grid.grid_to_world(&p);
+            let index = conveyor_segments.get_segment_index_for_position(position)
+                .expect(&format!("Somehow item not on any segment {} - {:?}", position, conveyor_segments.segments));
+            let progress = conveyor_segments.segments[index].progress_for_point(position);
+            conveyor.items.push(BeltItem {
+                position: world_grid.grid_to_world(&p),
+                item_entity,
+                segment_index: index,
+                segment_progress: progress,
+            });
+        }
+    }
+}
+
+
+pub fn conveyor_system(
+    time: Res<Time>,
+    world_grid: Res<WorldGrid>,
+    mut q_conveyor: Query<(&mut ConveyorBelt, &mut ConveyorSegments)>,
+    mut transform_q: Query<(&mut Transform, &mut YellowBileItem), Without<BeltElement>>,
+) {
+    for (mut conveyor, mut conveyor_segments) in q_conveyor.iter_mut() {
+        let segments = &mut conveyor_segments.segments;
+        let segment_length = segments.len();
+        let mut segment_blocked_progress= vec![1.0; segment_length] ;
+        // conveyor.items.sort_by(|a, b| {
+        //     a.segment_index.cmp(&b.segment_index)
+        //         .then_with(|| a.segment_progress.partial_cmp(&b.segment_progress).unwrap_or(std::cmp::Ordering::Equal))
+        // });
+
+        for mut item in &mut conveyor.items {
+            let segment = &segments[item.segment_index];
+            let mut start_position = segment.start_position;
+            let mut end_position = segment.end_position;
+            let previous_progress = item.segment_progress;
+            // Update segment progress based on speed and time
+            item.segment_progress += 0.50 * time.delta_seconds() / segment.length;
+            let item_width_progress = 0.1 / segment.length;
+
+
+            // If progress exceeds 1.0, move to the next segment
+            while item.segment_progress >= 1.0 {
+                // Subtract 1.0 to keep remaining progress
+                item.segment_progress -= 1.0;
+                item.segment_index += 1;
+
+                // Check if we have reached the end of the path
+                if item.segment_index >= segment_length {
+                    item.segment_index = segment_length.saturating_sub(1);
+                    item.segment_progress = 1.0; // Stop at the end
+                    break;
+                }
+
+                // Update start and end position for the next segment
+                start_position = segments[item.segment_index].start_position;
+                end_position = segments[item.segment_index].end_position;
+            }
+
+            // Check for overlapping and update blocked progress in the current segment
+            let max_progress = segment_blocked_progress[item.segment_index];
+            if item.segment_progress >= max_progress {
+                // If blocked, revert to previous progress
+                item.segment_progress = previous_progress;
+                segment_blocked_progress[item.segment_index] = item.segment_progress - item_width_progress;
+            }
+
+
+            let position = start_position + (end_position - start_position) * item.segment_progress;
+
+            if let Ok((mut item_transform, _)) = transform_q.get_mut(item.item_entity) {
+                item_transform.translation = position + Vec3::Y * 0.3;
+            }
         }
     }
 }
@@ -399,7 +476,7 @@ pub fn belt_system(
     world_grid: Res<WorldGrid>,
     conveyor_q: Query<&ConveyorBelt>,
     mut belt_q: Query<(&mut BeltElement, &Transform)>,
-    mut transform_q: Query<&mut Transform, Without<BeltElement>>,
+    mut transform_q: Query<(&mut Transform, &mut YellowBileItem), Without<BeltElement>>,
 ) {
     for conveyor in conveyor_q.iter() {
         let mut item_to_move: Option<Entity> = None;
@@ -417,7 +494,7 @@ pub fn belt_system(
         }
         let Ok((mut last_belt, last_transform)) = belt_q.get_mut(last_belt.entity) else { continue; };
         if let Some(item_entity) = last_belt.item {
-            let Ok(mut item_transform) = transform_q.get_mut(item_entity) else { continue; };
+            let Ok((mut item_transform, item)) = transform_q.get_mut(item_entity) else { continue; };
             let mut movement_direction = last_transform.translation - item_transform.translation;
             movement_direction.y = 0.0;
             movement_direction = movement_direction.try_normalize().unwrap_or(*last_transform.local_z());
@@ -461,7 +538,7 @@ pub fn belt_system(
                    (mut next_belt, _)
                    ]) = belt_q.get_many_mut([current, next]) else { continue; };
             if let Some(item_entity) = current_belt.item {
-                let Ok(mut item_transform) = transform_q.get_mut(item_entity) else { continue; };
+                let Ok((mut item_transform, item)) = transform_q.get_mut(item_entity) else { continue; };
                 let previous_position = item_transform.translation;
                 let current_grid_position = item_transform.grid_position(&world_grid);
                 let mut movement_direction = current_transform.translation - item_transform.translation;

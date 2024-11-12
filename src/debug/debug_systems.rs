@@ -124,11 +124,12 @@ pub fn debug_draw_conveyors(
     for conveyor in conveyor_q.iter() {
         for belt in conveyor.belt_pieces.iter() {
             shapes.transform = Transform::from_translation(
-                world_grid.grid_to_world(&belt.grid_position) + Vec3::Y * 0.05,
+                world_grid.grid_to_world(&belt.grid_position) + Vec3::Y * 0.15,
             )
                 .with_rotation(Quat::from_rotation_x(TAU * 0.25));
             shapes.thickness = 0.02;
             shapes.hollow = true;
+            shapes.color = Color::PURPLE.pastel();
 
             if belt.grid_position == conveyor.start_position() {
                 shapes.color = Color::BLACK;
@@ -138,8 +139,8 @@ pub fn debug_draw_conveyors(
                 shapes.color = Color::RED;
                 shapes.circle(0.15);
             }
-            shapes.color = Color::PURPLE.pastel();
             shapes.rect(Vec2::splat(0.9 * world_grid.grid_size));
+
         }
     }
 }

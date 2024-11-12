@@ -32,6 +32,7 @@ pub struct MainCamera {}
 
 fn main() {
     dotenv().ok();
+
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(PhysicsPlugins::default())
@@ -65,9 +66,6 @@ fn setup(
             material: materials.add(StandardMaterial::from(Color::rgb(0.3, 0.5, 0.3))),
             ..default()
         },
-        // PickableBundle::default(),
-        // RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
-        // OnPointer::<Over>::send_event::<DoSomethingComplex>(),
         Collider::cuboid(1000.0, 0.01, 1000.0),
         RigidBody::Static,
         Name::new("Floor"),
@@ -125,12 +123,9 @@ fn setup(
                 ..default()
             },
             MainCamera{},
-        ))
-    // .insert(
-    //     PickableBundle::default(), // Enable picking using this camera
-    // )
-    ;
+        ));
 }
+
 
 
 
