@@ -137,6 +137,15 @@ impl GridRotation {
             (GridRotation::E, GridRotation::E) => GridRotation::S,
         }
     }
+
+    pub fn get_direction(&self) -> Direction3d {
+        match self {
+            GridRotation::N => {Direction3d::Z}
+            GridRotation::S => {Direction3d::NEG_Z}
+            GridRotation::W => {Direction3d::X}
+            GridRotation::E => {Direction3d::NEG_X}
+        }
+    }
 }
 
 pub trait GridPiece {

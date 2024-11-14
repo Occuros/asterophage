@@ -1,3 +1,4 @@
+use crate::building::conveyor_belt::ConveyorBelt;
 use std::f32::consts::TAU;
 use bevy::prelude::*;
 use bevy::ui::Val::Px;
@@ -79,9 +80,9 @@ pub fn debug_draw_conveyors(
                 world_grid.grid_to_world(&belt.grid_position) + Vec3::Y * 0.15,
             )
                 .with_rotation(Quat::from_rotation_x(TAU * 0.25));
-            shapes.thickness = 0.02;
+            shapes.thickness = 0.01;
             shapes.hollow = true;
-            shapes.color = Color::PURPLE.pastel();
+            // shapes.color = Color::PURPLE.pastel();
 
             if belt.grid_position == conveyor.start_position() {
                 shapes.color = Color::BLACK;
@@ -91,7 +92,28 @@ pub fn debug_draw_conveyors(
                 shapes.color = Color::RED;
                 shapes.circle(0.15);
             }
-            shapes.rect(Vec2::splat(0.9 * world_grid.grid_size));
+            // shapes.rect(Vec2::splat(0.9 * world_grid.grid_size));
+
+            for segment in &conveyor.segments {
+                info_once!("Drawing segment {:?}", segment);
+                // shapes.transform = Transform::from_translation(Vec3::Y * 0.15);
+                let offset = Vec3::Y * 0.15;
+                shapes.color = Color::PINK;
+                shapes.thickness = 0.1;
+                shapes.hollow = false;
+                shapes.transform = Transform::from_translation( segment.start_position + offset).with_rotation(Quat::from_rotation_x(TAU * 0.25));
+                shapes.circle(0.1);
+
+                shapes.color = Color::PURPLE;
+
+                shapes.transform = Transform::from_translation( segment.end_position + offset).with_rotation(Quat::from_rotation_x(TAU * 0.25));;
+
+                shapes.circle(0.05);
+                shapes.transform = Transform::from_translation( Vec3::Y * 0.12);;
+                shapes.alignment = Alignment::Billboard;
+                shapes.thickness = 0.02;
+                shapes.line(segment.start_position, segment.end_position);
+            }
 
         }
     }

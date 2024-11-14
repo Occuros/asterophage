@@ -1,6 +1,7 @@
 use bevy::math::Vec3;
 use bevy::prelude::{Query, Res, Time, Transform, Without};
-use crate::building::building_components::{BeltElement, ConveyorBelt};
+use crate::building::building_components::{BeltElement};
+use crate::building::conveyor_belt::ConveyorBelt;
 use crate::world_grid::components::yellow_bile::YellowBileItem;
 
 pub fn conveyor_system(
@@ -20,7 +21,7 @@ pub fn conveyor_system(
             let mut end_position = segment.end_position;
             let previous_progress = item.segment_progress;
             // Update segment progress based on speed and time
-            item.segment_progress += 0.50 * time.delta_seconds() / segment.length;
+            item.segment_progress += conveyor.belt_speed * time.delta_seconds() / segment.length;
             let item_width_progress = 0.1 / segment.length;
 
 
@@ -55,6 +56,7 @@ pub fn conveyor_system(
 
             if let Ok((mut item_transform, _)) = transform_q.get_mut(item.item_entity) {
                 item_transform.translation = position + Vec3::Y * 0.3;
+                item.position = position;
             }
         }
     }

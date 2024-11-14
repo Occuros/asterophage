@@ -4,6 +4,7 @@ use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::*;
 use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
+use crate::building::conveyor_belt::ConveyorBelt;
 use crate::utilities::utility_methods::find_child_with_name;
 use crate::world_grid::components::yellow_bile::YellowBileItem;
 
@@ -150,17 +151,28 @@ pub fn respond_to_belt_element_removal(
     mut building_removed_event: EventReader<BuildingRemovedEvent>,
     mut belt_q: Query<&mut BeltElement>,
     mut conveyor_q: Query<&mut ConveyorBelt>,
+    world_grid: Res<WorldGrid>,
 ) {
     for event in building_removed_event.read() {
         let Ok(belt) = belt_q.get(event.building_entity) else { return; };
         let Some(conveyor_entity) = belt.conveyor_belt else { return; };
         let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity)  else { return; };
+        conveyor.items.retain(|item| {
+            let grid_position = world_grid.get_grid_position_from_world_position(item.position);
+            if event.grid_position == grid_position {
+                commands.entity(item.item_entity).despawn_recursive();
+                false
+            } else {
+                true
+            }
+        });
         if conveyor.belt_pieces.first().unwrap().entity == event.building_entity {
             conveyor.belt_pieces.remove(0);
             if conveyor.belt_pieces.is_empty() {
                 commands.entity(conveyor_entity).despawn_recursive();
                 return;
             }
+            conveyor.create_segments(&world_grid);
         } else if conveyor.belt_pieces.last().unwrap().entity == event.building_entity {
             let new_length = conveyor.belt_pieces.len() - 1;
             conveyor.belt_pieces.truncate(new_length);
@@ -168,17 +180,20 @@ pub fn respond_to_belt_element_removal(
                 commands.entity(conveyor_entity).despawn_recursive();
                 return;
             }
+            conveyor.create_segments(&world_grid);
         } else {
             let index = conveyor.belt_pieces.iter().position(|&b| b.entity == event.building_entity).unwrap();
             let before = conveyor.belt_pieces[0..index].to_vec();
             let after = conveyor.belt_pieces[index + 1..].to_vec();
             conveyor.belt_pieces = before;
+            conveyor.create_segments(&world_grid);
 
-
-            let new_conveyor_entity = commands.spawn(ConveyorBelt {
+            let conveyor_belt = ConveyorBelt {
                 belt_pieces: after[..].to_vec(),
                 ..default()
-            }).id();
+            };
+            conveyor.create_segments(&world_grid);
+            let new_conveyor_entity = commands.spawn(conveyor_belt).id();
 
             for belt in after.iter() {
                 let mut belt_element = belt_q.get_mut(belt.entity).unwrap();
@@ -371,18 +386,17 @@ pub fn extract_resources_system(
             let Some(belt) = belt else { continue; };
             let Some(conveyor_entity) = belt.conveyor_belt else { continue };
             let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity) else { continue };
-            // conveyor.start_position()
 
-            // if belt.item.is_some() { continue; }
+            let position = world_grid.grid_to_world(&p);
+            if !conveyor.has_space_at_position(position, 0.2) {continue}
+
+
             let item_entity = YellowBileItem::spawn(
                 world_grid.grid_to_world(&p),
                 Quat::IDENTITY,
                 &mut shapes,
             );
 
-            // belt.item = Some(item_entity);
-
-            let position = world_grid.grid_to_world(&p);
             let index = conveyor.get_segment_index_for_position(position)
                 .expect(&format!("Somehow item not on any segment {} - {:?}", position, conveyor.segments));
             let progress = conveyor.segments[index].progress_for_point(position);

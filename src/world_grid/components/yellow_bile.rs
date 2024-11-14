@@ -1,7 +1,7 @@
 use std::f32::consts::TAU;
 use bevy::asset::AssetServer;
 use bevy::math::{Quat, Vec3};
-use bevy::prelude::{Color, Commands, Component, default, Entity, SceneBundle, Transform};
+use bevy::prelude::*;
 use bevy_vector_shapes::painter::ShapeCommands;
 use bevy_vector_shapes::prelude::*;
 
@@ -12,9 +12,7 @@ pub struct YellowBileResource {
 }
 
 #[derive(Component, Default)]
-pub struct YellowBileItem {
-
-}
+pub struct YellowBileItem {}
 
 impl YellowBileItem {
     pub fn spawn(
@@ -27,7 +25,11 @@ impl YellowBileItem {
         shapes.color = Color::YELLOW;
         shapes.rotate_x(TAU * 0.25);
         shapes.rotate(rotation);
-        shapes.circle(0.05).insert(YellowBileItem {}).id()
+        shapes.circle(0.05).insert((
+            YellowBileItem {},
+            Name::new("YellowItem")
+        )
+        ).id()
     }
 }
 

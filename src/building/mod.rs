@@ -1,12 +1,15 @@
+use bevy::ecs::query::QueryData;
 use crate::building::building_systems::*;
 use bevy::prelude::*;
 use crate::building::building_components::{BuildingPlacedEvent, BuildingRemovedEvent, ConveyorPlacedEvent, Inserter};
+use crate::building::conveyor_belt::ConveyorBelt;
 use crate::building::conveyor_belt_systems::conveyor_system;
-use self::building_components::{Building, Extractor, BeltElement, ConveyorBelt};
+use self::building_components::*;
 
 pub mod building_components;
 mod building_systems;
 mod conveyor_belt_systems;
+pub mod conveyor_belt;
 
 pub struct BuildingPlugin;
 
@@ -38,3 +41,9 @@ impl Plugin for BuildingPlugin {
         ;
     }
 }
+
+// #[derive(QueryData)]
+// #[query_data(mutable)]
+// pub struct ConveyorQuery {
+//     conveyor_belt: &'static mut ConveyorBelt
+// }
