@@ -1,5 +1,7 @@
 use bevy::prelude::*;
-use bevy_xpbd_3d::prelude::*;
+use avian3d::prelude::*;
+use bevy::color::palettes::css;
+use bevy::color::palettes::css::PURPLE;
 
 #[derive(Component, Default)]
 pub struct Player {
@@ -40,7 +42,7 @@ impl Bullet {
                 PbrBundle {
                     transform,
                     mesh: meshes.add(Mesh::try_from(shape).unwrap()),
-                    material: materials.add(StandardMaterial::from(Color::PURPLE)),
+                    material: materials.add(StandardMaterial::from_color(PURPLE)),
                     ..default()
                 },
                 Bullet {},

@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
-use bevy_xpbd_3d::prelude::*;
+use avian3d::prelude::*;
 use std::f32::consts::TAU;
 use bevy::input::mouse::MouseWheel;
 use crate::MainCamera;
 use crate::player::player_components::*;
-
+use bevy::color::palettes::css;
+use bevy::color::palettes::css::ORANGE;
 
 pub const PLAYER_SPEED: f32 = 2.0;
 
@@ -95,7 +96,7 @@ pub fn paint_target(game_cursor: Res<GameCursor>, mut painter: ShapePainter) {
     painter.transform.translation += Vec3::Y * 0.01;
     painter.transform.rotation = Quat::from_rotation_x(TAU * 0.25);
     painter.hollow = false;
-    painter.color = Color::ORANGE;
+    painter.color = ORANGE.into();
     painter.circle(0.3);
 }
 

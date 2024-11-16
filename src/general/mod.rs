@@ -1,3 +1,4 @@
+use bevy::color::palettes::css::WHITE;
 use bevy::prelude::*;
 use crate::general::general_systems::*;
 use crate::setup;
@@ -20,16 +21,5 @@ impl Plugin for GeneralPlugin {
             .add_systems(PostUpdate , move_building_preview_with_cursor_system)
             .add_systems(Startup, setup_menu.after(setup))
         ;
-    }
-}
-
-
-pub trait Pastel {
-    fn pastel(&self) -> Color;
-}
-
-impl Pastel for Color {
-    fn pastel(&self) -> Color {
-        (*self + Color::WHITE * 0.25).with_a(1.0)
     }
 }

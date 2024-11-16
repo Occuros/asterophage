@@ -1,17 +1,24 @@
 use crate::building::conveyor_belt::ConveyorBelt;
-use std::f32::consts::TAU;
+use crate::debug::debug_components::*;
+use crate::player::player_components::GameCursor;
+use crate::world_grid::world_gird_components::*;
+use crate::MainCamera;
+use bevy::color::palettes::css::{PURPLE, RED};
+use bevy::color::palettes::tailwind::{GREEN_500, PINK_600};
 use bevy::prelude::*;
 use bevy::ui::Val::Px;
 use bevy_vector_shapes::painter::ShapePainter;
 use bevy_vector_shapes::prelude::*;
-use crate::building::building_components::*;
-use crate::debug::debug_components::*;
-use crate::general::Pastel;
-use crate::player::player_components::GameCursor;
-use crate::world_grid::world_gird_components::*;
+use std::f32::consts::TAU;
 
-pub fn debug_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn debug_setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    camera_query: Query<Entity, With<MainCamera>>,
+) {
+    let main_camera = camera_query.get_single().unwrap();
     commands.spawn((
+        TargetCamera(main_camera),
         // Create a TextBundle that has a Text with a single section.
         TextBundle::from_section(
             // Accepts a `String` or any type that converts into a `String`, such as `&str`
@@ -22,15 +29,17 @@ pub fn debug_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 font_size: 10.0,
                 ..default()
             },
-        ).with_text_justify(JustifyText::Left)
-            // Set the style of the TextBundle itself.
-            .with_style(Style {
-                position_type: PositionType::Absolute,
-                bottom: Val::Px(5.0),
-                right: Val::Px(5.0),
-                ..default()
-            }),
+        )
+        .with_text_justify(JustifyText::Left)
+        // Set the style of the TextBundle itself.
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(5.0),
+            right: Val::Px(5.0),
+            ..default()
+        }),
         DebugText,
+        Name::new("Debug Text"),
     ));
 }
 
@@ -39,14 +48,19 @@ pub fn cursor_position_debug_system(
     mut debug_text_event: EventWriter<CursorDebugTextEvent>,
     world_grid: Res<WorldGrid>,
 ) {
-    let position = world_grid.get_grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
-    debug_text_event.send(CursorDebugTextEvent{
-        text: format!("x:{} y:{} => {:.2?}", position.x, position.y, game_cursor.world_position.unwrap_or_default()),
+    let position = world_grid
+        .get_grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
+    debug_text_event.send(CursorDebugTextEvent {
+        text: format!(
+            "x:{} y:{} => {:.2?}",
+            position.x,
+            position.y,
+            game_cursor.world_position.unwrap_or_default()
+        ),
     });
 }
 
-pub fn move_debug_text_system
-(
+pub fn move_debug_text_system(
     window_query: Query<&Window>,
     mut debug_text_q: Query<&mut Style, With<DebugText>>,
 ) {
@@ -62,7 +76,9 @@ pub fn change_debug_text_system(
     mut debug_text_event: EventReader<CursorDebugTextEvent>,
     mut debut_text_q: Query<&mut Text, With<DebugText>>,
 ) {
-    if debut_text_q.get_single().is_err() {return;}
+    if debut_text_q.get_single().is_err() {
+        return;
+    }
     let mut text: Mut<'_, Text> = debut_text_q.single_mut();
 
     for event in debug_text_event.read() {
@@ -79,7 +95,7 @@ pub fn debug_draw_conveyors(
             shapes.transform = Transform::from_translation(
                 world_grid.grid_to_world(&belt.grid_position) + Vec3::Y * 0.15,
             )
-                .with_rotation(Quat::from_rotation_x(TAU * 0.25));
+            .with_rotation(Quat::from_rotation_x(TAU * 0.25));
             shapes.thickness = 0.01;
             shapes.hollow = true;
             // shapes.color = Color::PURPLE.pastel();
@@ -89,32 +105,41 @@ pub fn debug_draw_conveyors(
                 shapes.circle(0.1);
             }
             if belt.grid_position == conveyor.end_position() {
-                shapes.color = Color::RED;
+                shapes.color = RED.into();
                 shapes.circle(0.15);
             }
             // shapes.rect(Vec2::splat(0.9 * world_grid.grid_size));
 
             for segment in &conveyor.segments {
-                info_once!("Drawing segment {:?}", segment);
                 // shapes.transform = Transform::from_translation(Vec3::Y * 0.15);
                 let offset = Vec3::Y * 0.15;
-                shapes.color = Color::PINK;
+                shapes.color = PINK_600.into();
                 shapes.thickness = 0.1;
                 shapes.hollow = false;
-                shapes.transform = Transform::from_translation( segment.start_position + offset).with_rotation(Quat::from_rotation_x(TAU * 0.25));
-                shapes.circle(0.1);
+                shapes.transform = Transform::from_translation(segment.start_position + offset)
+                    .with_rotation(Quat::from_rotation_x(TAU * 0.25));
+                shapes.circle(0.05);
 
-                shapes.color = Color::PURPLE;
+                shapes.color = if segment.is_connector {
+                    GREEN_500.into()
+                } else {
+                    PURPLE.into()
+                };
 
-                shapes.transform = Transform::from_translation( segment.end_position + offset).with_rotation(Quat::from_rotation_x(TAU * 0.25));;
+                shapes.transform = Transform::from_translation(segment.end_position + offset)
+                    .with_rotation(Quat::from_rotation_x(TAU * 0.25));
 
                 shapes.circle(0.05);
-                shapes.transform = Transform::from_translation( Vec3::Y * 0.12);;
+                shapes.transform = Transform::from_translation(Vec3::Y * 0.12);
                 shapes.alignment = Alignment::Billboard;
                 shapes.thickness = 0.02;
                 shapes.line(segment.start_position, segment.end_position);
-            }
 
+                for item in &conveyor.items {
+                    shapes.transform.translation = item.position + Vec3::Y * 0.5;
+                    shapes.rect(Vec2::splat(0.1));
+                }
+            }
         }
     }
 }

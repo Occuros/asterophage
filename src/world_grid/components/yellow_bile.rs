@@ -1,5 +1,6 @@
 use std::f32::consts::TAU;
 use bevy::asset::AssetServer;
+use bevy::color::palettes::css::YELLOW;
 use bevy::math::{Quat, Vec3};
 use bevy::prelude::*;
 use bevy_vector_shapes::painter::ShapeCommands;
@@ -22,7 +23,7 @@ impl YellowBileItem {
     ) -> Entity {
         shapes.reset = true;
         shapes.transform = Transform::from_translation(position + Vec3::Y * 0.2);
-        shapes.color = Color::YELLOW;
+        shapes.color = YELLOW.into();
         shapes.rotate_x(TAU * 0.25);
         shapes.rotate(rotation);
         shapes.circle(0.05).insert((

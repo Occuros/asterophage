@@ -1,5 +1,6 @@
 use bevy::{prelude::*, utils::HashMap};
 use std::{f32::consts::TAU, f32::consts::PI, ops};
+use crate::building::building_components::Building;
 
 #[derive(Component, Reflect, Hash, Eq, PartialEq, Debug, Clone, Default, Copy)]
 pub struct GridPosition {
@@ -138,12 +139,12 @@ impl GridRotation {
         }
     }
 
-    pub fn get_direction(&self) -> Direction3d {
+    pub fn get_direction(&self) -> Dir3 {
         match self {
-            GridRotation::N => {Direction3d::Z}
-            GridRotation::S => {Direction3d::NEG_Z}
-            GridRotation::W => {Direction3d::X}
-            GridRotation::E => {Direction3d::NEG_X}
+            GridRotation::N => {Dir3::Z}
+            GridRotation::S => {Dir3::NEG_Z}
+            GridRotation::W => {Dir3::X}
+            GridRotation::E => {Dir3::NEG_X}
         }
     }
 }
@@ -255,10 +256,21 @@ impl WorldGrid {
     }
 
     #[allow(dead_code)]
-    pub fn get_cell(&mut self, grid_position: &GridPosition) -> &Cell {
+    pub fn cell(&mut self, grid_position: &GridPosition) -> &Cell {
         if !self.cells.contains_key(grid_position) {
             self.cells.insert(*grid_position, Cell::default());
         }
-        return &self.cells[grid_position];
+        &self.cells[grid_position]
+    }
+
+    pub fn get_cell(&self, grid_position: &GridPosition) -> Option<&Cell> {
+        self.cells.get(grid_position)
+    }
+
+    pub fn get_building_entity(&self, grid_position: &GridPosition) -> Option<Entity> {
+        self.cells.get(grid_position).and_then(|c| match c.surface_layer {
+            SurfaceLayer::Building {entity } => { Some(entity)}
+            _ => None
+        })
     }
 }

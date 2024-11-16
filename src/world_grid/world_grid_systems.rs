@@ -1,10 +1,10 @@
 use crate::player::player_components::{GameCursor, Player};
+use crate::world_grid::components::yellow_bile::YellowBileResource;
 use crate::world_grid::world_gird_components::*;
+use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use noisy_bevy::simplex_noise_2d_seeded;
 use std::f32::consts::TAU;
-use bevy::prelude::*;
-use crate::world_grid::components::yellow_bile::YellowBileResource;
 
 pub fn draw_grid(
     _commands: Commands,
@@ -36,7 +36,7 @@ pub fn draw_grid(
             painter.color = if cell_selected {
                 position.y += 0.1;
                 let grey_value = 0.6;
-                Color::rgba(grey_value, grey_value, grey_value, 0.3)
+                Color::srgba(grey_value, grey_value, grey_value, 0.3)
             } else {
                 let distance_x =
                     1.0 - (position.x - player_transform.translation.x).abs() / max_distance;
@@ -68,8 +68,8 @@ fn get_noise_value(grid_position: GridPosition, zoom_level: f32) -> f32 {
     for f in &frequencies {
         combined_noise += f
             * ((simplex_noise_2d_seeded(Vec2::new(f * x * zoom_level, f * y * zoom_level), *f)
-            + 1.0)
-            * 0.5)
+                + 1.0)
+                * 0.5)
     }
     combined_noise / frequencies.iter().sum::<f32>()
 }
@@ -132,5 +132,3 @@ pub fn discover_world_system(
         }
     }
 }
-
-

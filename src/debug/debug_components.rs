@@ -5,5 +5,8 @@ pub struct DebugText;
 
 #[derive(Event, Default)]
 pub struct CursorDebugTextEvent {
-    pub text: String
+    pub text: String,
 }
+
+#[derive(Component)]
+pub struct CursorPositionDebug;

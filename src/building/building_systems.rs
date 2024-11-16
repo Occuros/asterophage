@@ -1,12 +1,14 @@
-use std::f32::consts::TAU;
 use crate::building::building_components::*;
+use crate::building::conveyor_belt::{
+    ConveyorBelt, ConveyorSegmentsChanged, ItemReachedOtherBeltTrigger,
+};
 use crate::player::player_components::GameCursor;
+use crate::utilities::utility_methods::find_child_with_name;
+use crate::world_grid::components::yellow_bile::YellowBileItem;
 use crate::world_grid::world_gird_components::*;
 use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
-use crate::building::conveyor_belt::ConveyorBelt;
-use crate::utilities::utility_methods::find_child_with_name;
-use crate::world_grid::components::yellow_bile::YellowBileItem;
+use std::f32::consts::TAU;
 
 pub fn place_building_system(
     mut commands: Commands,
@@ -75,7 +77,6 @@ pub fn place_building_system(
     }
 }
 
-
 pub fn remove_building_system(
     input: Res<ButtonInput<MouseButton>>,
     game_cursor: ResMut<GameCursor>,
@@ -94,19 +95,16 @@ pub fn remove_building_system(
     let grid_position = world_grid.get_grid_position_from_world_position(position);
     if let Some(cell) = world_grid.cells.get_mut(&grid_position) {
         match cell.surface_layer {
-            SurfaceLayer::Building {
-                entity
-            } => {
+            SurfaceLayer::Building { entity } => {
                 building_removed_event.send(BuildingRemovedEvent {
                     building_entity: entity,
                     grid_position,
                 });
             }
-            _ => return
+            _ => return,
         }
     }
 }
-
 
 pub fn destroy_building_system(
     mut command: Commands,
@@ -154,9 +152,15 @@ pub fn respond_to_belt_element_removal(
     world_grid: Res<WorldGrid>,
 ) {
     for event in building_removed_event.read() {
-        let Ok(belt) = belt_q.get(event.building_entity) else { return; };
-        let Some(conveyor_entity) = belt.conveyor_belt else { return; };
-        let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity)  else { return; };
+        let Ok(belt) = belt_q.get(event.building_entity) else {
+            return;
+        };
+        let Some(conveyor_entity) = belt.conveyor_belt else {
+            return;
+        };
+        let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity) else {
+            return;
+        };
         conveyor.items.retain(|item| {
             let grid_position = world_grid.get_grid_position_from_world_position(item.position);
             if event.grid_position == grid_position {
@@ -172,7 +176,7 @@ pub fn respond_to_belt_element_removal(
                 commands.entity(conveyor_entity).despawn_recursive();
                 return;
             }
-            conveyor.create_segments(&world_grid);
+            commands.trigger_targets(ConveyorSegmentsChanged, conveyor_entity);
         } else if conveyor.belt_pieces.last().unwrap().entity == event.building_entity {
             let new_length = conveyor.belt_pieces.len() - 1;
             conveyor.belt_pieces.truncate(new_length);
@@ -180,29 +184,32 @@ pub fn respond_to_belt_element_removal(
                 commands.entity(conveyor_entity).despawn_recursive();
                 return;
             }
-            conveyor.create_segments(&world_grid);
+            commands.trigger_targets(ConveyorSegmentsChanged, conveyor_entity);
         } else {
-            let index = conveyor.belt_pieces.iter().position(|&b| b.entity == event.building_entity).unwrap();
+            let index = conveyor
+                .belt_pieces
+                .iter()
+                .position(|&b| b.entity == event.building_entity)
+                .unwrap();
             let before = conveyor.belt_pieces[0..index].to_vec();
             let after = conveyor.belt_pieces[index + 1..].to_vec();
             conveyor.belt_pieces = before;
-            conveyor.create_segments(&world_grid);
+            commands.trigger_targets(ConveyorSegmentsChanged, conveyor_entity);
 
             let conveyor_belt = ConveyorBelt {
                 belt_pieces: after[..].to_vec(),
                 ..default()
             };
-            conveyor.create_segments(&world_grid);
             let new_conveyor_entity = commands.spawn(conveyor_belt).id();
 
             for belt in after.iter() {
                 let mut belt_element = belt_q.get_mut(belt.entity).unwrap();
                 belt_element.conveyor_belt = Some(new_conveyor_entity);
             }
+            commands.trigger_targets(ConveyorSegmentsChanged, new_conveyor_entity);
         }
     }
 }
-
 
 pub fn handle_conveyor_placement_system(
     mut commands: Commands,
@@ -241,10 +248,10 @@ pub fn handle_conveyor_placement_system(
             left_conveyor_entity,
             right_conveyor_entity,
         ]
-            .iter()
-            .flatten()
-            .map(|e| *e)
-            .collect::<Vec<_>>();
+        .iter()
+        .flatten()
+        .map(|e| *e)
+        .collect::<Vec<_>>();
 
         for _ in 0..conveyors_entities_to_check.len() {
             let Some(&next_conveyor_entity) = conveyors_entities_to_check.first() else {
@@ -266,8 +273,7 @@ pub fn handle_conveyor_placement_system(
                 }
             }
         }
-        let mut conveyor = conveyor_q.get_mut(primary_conveyor_entity).unwrap();
-        conveyor.create_segments(&world_grid);
+        commands.trigger_targets(ConveyorSegmentsChanged, primary_conveyor_entity);
     }
 }
 
@@ -326,6 +332,7 @@ fn check_for_conveyor_merge(
     };
 
     if primary_conveyor.can_connect_to_start_piece(&secondary_end_piece) {
+        info!("we connect them to the start");
         for bp in primary_conveyor.belt_pieces.iter() {
             let mut b = belt_q.get_mut(bp.entity).unwrap();
             b.conveyor_belt = Some(secondary_conveyor_entity);
@@ -337,6 +344,8 @@ fn check_for_conveyor_merge(
         commands.entity(primary_conveyor_entity).despawn_recursive();
         return Some(secondary_conveyor_entity);
     } else if primary_conveyor.end_piece_can_connect_to(secondary_start_piece) {
+        info!("we connect them to the end");
+
         for bp in secondary_conveyor.belt_pieces.iter() {
             let mut b = belt_q.get_mut(bp.entity).unwrap();
             b.conveyor_belt = Some(primary_conveyor_entity);
@@ -351,10 +360,10 @@ fn check_for_conveyor_merge(
             .despawn_recursive();
         return Some(primary_conveyor_entity);
     }
+    info!("no merge possible {:?}", primary_conveyor_entity);
 
-    return None;
+    None
 }
-
 
 pub fn extract_resources_system(
     time: Res<Time>,
@@ -366,39 +375,45 @@ pub fn extract_resources_system(
 ) {
     for (mut extractor, transform) in extractor_q.iter_mut() {
         extractor.timer.tick(time.delta());
-        if !extractor.timer.finished() { continue; }
+        if !extractor.timer.finished() {
+            continue;
+        }
         let grid_position = world_grid.get_grid_position_from_world_position(transform.translation);
         let potential_positions = grid_position.get_all_surrounding_positions();
         for p in potential_positions.iter() {
-            let Some(cell) = world_grid.cells.get(p) else { continue; };
+            let Some(cell) = world_grid.cells.get(p) else {
+                continue;
+            };
             let belt = match cell.surface_layer {
-                SurfaceLayer::Empty => {
-                    None
-                }
-                SurfaceLayer::Building { entity } => {
-                    belt_q.get_mut(entity).ok()
-                }
-                SurfaceLayer::Resource { .. } => {
-                    None
-                }
+                SurfaceLayer::Empty => None,
+                SurfaceLayer::Building { entity } => belt_q.get_mut(entity).ok(),
+                SurfaceLayer::Resource { .. } => None,
             };
 
-            let Some(belt) = belt else { continue; };
-            let Some(conveyor_entity) = belt.conveyor_belt else { continue };
-            let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity) else { continue };
+            let Some(belt) = belt else {
+                continue;
+            };
+            let Some(conveyor_entity) = belt.conveyor_belt else {
+                continue;
+            };
+            let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity) else {
+                continue;
+            };
 
             let position = world_grid.grid_to_world(&p);
-            if !conveyor.has_space_at_position(position, 0.2) {continue}
+            if !conveyor.has_space_at_position(position, 0.2) {
+                continue;
+            }
 
+            let item_entity =
+                YellowBileItem::spawn(world_grid.grid_to_world(&p), Quat::IDENTITY, &mut shapes);
 
-            let item_entity = YellowBileItem::spawn(
-                world_grid.grid_to_world(&p),
-                Quat::IDENTITY,
-                &mut shapes,
-            );
-
-            let index = conveyor.get_segment_index_for_position(position)
-                .expect(&format!("Somehow item not on any segment {} - {:?}", position, conveyor.segments));
+            let index = conveyor
+                .get_segment_index_for_position(position)
+                .expect(&format!(
+                    "Somehow item not on any segment {} - {:?}",
+                    position, conveyor.segments
+                ));
             let progress = conveyor.segments[index].progress_for_point(position);
             conveyor.items.push(BeltItem {
                 position: world_grid.grid_to_world(&p),
@@ -410,9 +425,6 @@ pub fn extract_resources_system(
     }
 }
 
-
-
-
 pub fn inserter_animation_system(
     mut inserter_q: Query<(Entity, &mut Inserter), Without<Preview>>,
     mut transform_q: Query<&mut Transform>,
@@ -422,68 +434,30 @@ pub fn inserter_animation_system(
 ) {
     for (entity, mut inserter) in inserter_q.iter_mut() {
         if inserter.rotation_spot.is_none() {
-            inserter.rotation_spot = find_child_with_name(entity, "element-d", &children_q, &name_q);
+            inserter.rotation_spot =
+                find_child_with_name(entity, "element-d", &children_q, &name_q);
             continue;
         }
-        if inserter.target_reached { continue; }
+        if inserter.target_reached {
+            continue;
+        }
 
-        let Ok(mut robot_transform) = transform_q.get_mut(inserter.rotation_spot.unwrap()) else { continue; };
-        let target_rotation = if inserter.item.is_some() { TAU / 2.5 } else { -TAU / 2.5 };
+        let Ok(mut robot_transform) = transform_q.get_mut(inserter.rotation_spot.unwrap()) else {
+            continue;
+        };
+        let target_rotation = if inserter.item.is_some() {
+            TAU / 2.5
+        } else {
+            -TAU / 2.5
+        };
         let end_rotation = Quat::from_rotation_x(target_rotation);
 
         if robot_transform.rotation.angle_between(end_rotation) > 0.01 {
-            robot_transform.rotation = robot_transform.rotation.slerp(end_rotation, time.delta_seconds() * 3.0);
+            robot_transform.rotation = robot_transform
+                .rotation
+                .slerp(end_rotation, time.delta_seconds() * 3.0);
         } else {
             inserter.target_reached = true;
         }
     }
 }
-
-pub fn inserter_system(
-    mut inserter_q: Query<(Entity, &mut Inserter), Without<Preview>>,
-    mut transform_q: Query<&mut Transform>,
-    mut belt_q: Query<&mut BeltElement>,
-    world_grid: Res<WorldGrid>,
-) {
-    for (entity, mut inserter) in inserter_q.iter_mut() {
-        if !inserter.target_reached { continue; };
-
-        let Ok(robot_transform) = transform_q.get_mut(entity) else { continue; };
-        let grid_position = robot_transform.grid_position(&world_grid);
-        let back_position = grid_position.get_relative_back(robot_transform.grid_rotation());
-        let forward_position = grid_position.get_relative_forward(robot_transform.grid_rotation());
-
-
-        if inserter.item.is_some() {
-            let Some(cell) = world_grid.cells.get(&forward_position) else { continue; };
-            let SurfaceLayer::Building { entity } = cell.surface_layer else { continue; };
-            let Ok(mut belt) = belt_q.get_mut(entity) else { continue; };
-            if belt.item.is_some() {
-                debug!("belt had something at {:?}", forward_position);
-                continue;
-            };
-            let Ok(mut item_transform) = transform_q.get_mut(inserter.item.unwrap()) else { continue; };
-            debug!("we disposed something at {:?}", forward_position);
-            let target_position = world_grid.grid_to_world(&forward_position);
-            item_transform.translation.x = target_position.x;
-            item_transform.translation.z = target_position.z;
-            belt.item = inserter.item;
-            inserter.item = None;
-            inserter.target_reached = false;
-            continue;
-        } else {
-            let Some(cell) = world_grid.cells.get(&back_position) else { continue; };
-            let SurfaceLayer::Building { entity } = cell.surface_layer else { continue; };
-            let Ok(mut belt) = belt_q.get_mut(entity) else { continue; };
-            if let Some(item) = belt.item {
-                inserter.item = Some(item);
-                belt.item = None;
-                inserter.target_reached = false;
-            }
-        }
-    }
-}
-
-
-
-
