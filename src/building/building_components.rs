@@ -3,10 +3,11 @@ use bevy::color::palettes::css::YELLOW;
 use bevy::prelude::TimerMode::Repeating;
 use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::f32::consts::TAU;
 use std::time::Duration;
 
-#[derive(Default, Reflect, Clone, Copy, PartialEq)]
+#[derive(Default, Reflect, Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
 pub enum BuildingType {
     #[default]
     None,
@@ -335,14 +336,17 @@ impl BeltPiece {
     pub fn relative_forward_position(&self) -> GridPosition {
         self.grid_position.get_relative_forward(self.grid_rotation)
     }
+    #[allow(dead_code)]
     pub fn relative_back_position(&self) -> GridPosition {
         self.grid_position.get_relative_back(self.grid_rotation)
     }
 
+    #[allow(dead_code)]
     pub fn relative_left_position(&self) -> GridPosition {
         self.grid_position.get_relative_left(self.grid_rotation)
     }
 
+    #[allow(dead_code)]
     pub fn relative_right_position(&self) -> GridPosition {
         self.grid_position.get_relative_right(self.grid_rotation)
     }

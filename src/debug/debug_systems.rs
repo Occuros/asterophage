@@ -50,12 +50,13 @@ pub fn cursor_position_debug_system(
 ) {
     let position = world_grid
         .get_grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
+
+    let world_position = game_cursor.world_position.unwrap_or_default();
     debug_text_event.send(CursorDebugTextEvent {
         text: format!(
-            "x:{} y:{} => {:.2?}",
-            position.x,
-            position.y,
-            game_cursor.world_position.unwrap_or_default()
+            "x:{} y:{}\n\
+            x:{:.1?}z:{:.1?}",
+            position.x, position.y, world_position.x, world_position.z,
         ),
     });
 }
@@ -135,10 +136,10 @@ pub fn debug_draw_conveyors(
                 shapes.thickness = 0.02;
                 shapes.line(segment.start_position, segment.end_position);
 
-                for item in &conveyor.items {
-                    shapes.transform.translation = item.position + Vec3::Y * 0.5;
-                    shapes.rect(Vec2::splat(0.1));
-                }
+                // for item in &conveyor.items {
+                //     shapes.transform.translation = item.position + Vec3::Y * 0.5;
+                //     shapes.rect(Vec2::splat(0.1));
+                // }
             }
         }
     }

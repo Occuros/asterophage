@@ -1,12 +1,11 @@
+use crate::player::player_components::*;
+use crate::MainCamera;
+use avian3d::prelude::*;
+use bevy::color::palettes::css::ORANGE;
+use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
-use avian3d::prelude::*;
 use std::f32::consts::TAU;
-use bevy::input::mouse::MouseWheel;
-use crate::MainCamera;
-use crate::player::player_components::*;
-use bevy::color::palettes::css;
-use bevy::color::palettes::css::ORANGE;
 
 pub const PLAYER_SPEED: f32 = 2.0;
 
@@ -18,8 +17,10 @@ pub fn spawn_player(
     // cube
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(Cuboid { half_size: Vec3::splat(0.25) })),
-            material: materials.add(StandardMaterial::from(Color::rgb(0.8, 0.7, 0.6))),
+            mesh: meshes.add(Mesh::from(Cuboid {
+                half_size: Vec3::splat(0.25),
+            })),
+            material: materials.add(StandardMaterial::from(Color::srgb(0.8, 0.7, 0.6))),
             transform: Transform::from_xyz(0.0, 0.25, 0.0),
             ..default()
         },
@@ -28,9 +29,6 @@ pub fn spawn_player(
         Name::new("Player"),
     ));
 }
-
-
-
 
 pub fn move_player(
     keyboard_input: Res<ButtonInput<KeyCode>>,
@@ -68,7 +66,7 @@ pub fn move_camera_system(
     mut cameras: Query<&mut Transform, (With<Camera>, With<MainCamera>, Without<Player>)>,
     player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
     mut mouse_wheel: EventReader<MouseWheel>,
-    mut zoom_level: Local<f32>
+    mut zoom_level: Local<f32>,
 ) {
     for ev in mouse_wheel.read() {
         *zoom_level += ev.y;
@@ -81,7 +79,10 @@ pub fn move_camera_system(
                 + player_transform.up() * *zoom_level;
             c.translation = look_target;
             c.look_at(player_transform.translation, Vec3::Y);
-            c.rotate_around(player_transform.translation, Quat::from_rotation_y(TAU * 0.5))
+            c.rotate_around(
+                player_transform.translation,
+                Quat::from_rotation_y(TAU * 0.5),
+            )
         }
     }
 }
@@ -124,7 +125,14 @@ pub fn shoot(
         //     meshes,
         //     materials,
         // ));
-        Bullet::spawn(player_transform.translation, result.rotation, Some(player_entity), &mut commands, meshes, materials);
+        Bullet::spawn(
+            player_transform.translation,
+            result.rotation,
+            Some(player_entity),
+            &mut commands,
+            meshes,
+            materials,
+        );
     }
 }
 
@@ -149,27 +157,24 @@ pub fn bullet_collisions_system(
     for CollisionStarted(e1, e2) in collision_events.read() {
         let bullet_other = if bullet_query.get(*e1).is_ok() {
             Some((e1, e2))
-        } else if bullet_query.get(*e2).is_ok()  {
+        } else if bullet_query.get(*e2).is_ok() {
             Some((e2, e1))
         } else {
             None
-        } ;
-        
-       if let Some((bullet_entity, other_entity)) = bullet_other {
-           let (_, owner)  = bullet_query.get(*bullet_entity).unwrap();
+        };
+
+        if let Some((bullet_entity, other_entity)) = bullet_other {
+            let (_, owner) = bullet_query.get(*bullet_entity).unwrap();
             if let Some(owner_entity) = owner.entity {
                 if owner_entity == *other_entity {
                     continue;
                 }
-            
-            commands.entity(*bullet_entity).despawn();
+
+                commands.entity(*bullet_entity).despawn();
+            }
         }
-       }
     }
 }
-
-
-
 
 pub fn move_light_system(
     mut light_query: Query<&mut Transform, (With<PointLight>, Without<Player>)>,

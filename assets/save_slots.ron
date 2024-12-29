@@ -1,0 +1,56 @@
+SaveSlots(
+    slots: {
+        1: SaveSlot(
+            buildings: [
+                PlacedBuilding(
+                    building_type: ConveyorBelt,
+                    position: Vec3(-3.0, 0.0, 2.5),
+                    rotation: Quat(0.0, -0.99999994, 0.0, 0.0),
+                    size: 0.5,
+                ),
+                PlacedBuilding(
+                    building_type: ConveyorBelt,
+                    position: Vec3(-3.0, 0.0, 2.0),
+                    rotation: Quat(0.0, -0.99999994, 0.0, 0.0),
+                    size: 0.5,
+                ),
+                PlacedBuilding(
+                    building_type: ConveyorBelt,
+                    position: Vec3(-3.0, 0.0, 1.5),
+                    rotation: Quat(0.0, -0.99999994, 0.0, 0.0),
+                    size: 0.5,
+                ),
+                PlacedBuilding(
+                    building_type: ConveyorBelt,
+                    position: Vec3(-4.0, 0.0, 2.5),
+                    rotation: Quat(0.0, -0.99999994, 0.0, 0.0),
+                    size: 0.5,
+                ),
+                PlacedBuilding(
+                    building_type: ConveyorBelt,
+                    position: Vec3(-4.0, 0.0, 2.0),
+                    rotation: Quat(0.0, -0.7071067, 0.0, -0.7071067),
+                    size: 0.5,
+                ),
+                PlacedBuilding(
+                    building_type: ConveyorBelt,
+                    position: Vec3(-3.5, 0.0, 2.0),
+                    rotation: Quat(0.0, -0.7071067, 0.0, -0.7071067),
+                    size: 0.5,
+                ),
+                PlacedBuilding(
+                    building_type: Extractor,
+                    position: Vec3(-3.0, 0.0, 3.0),
+                    rotation: Quat(0.0, 0.0, 0.0, 1.0),
+                    size: 0.5,
+                ),
+                PlacedBuilding(
+                    building_type: Extractor,
+                    position: Vec3(-4.0, 0.0, 3.0),
+                    rotation: Quat(0.0, 0.0, 0.0, 1.0),
+                    size: 0.5,
+                ),
+            ],
+        ),
+    },
+)

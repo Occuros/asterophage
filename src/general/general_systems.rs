@@ -12,9 +12,9 @@ use bevy::color::palettes::css::RED;
 use bevy::prelude::*;
 use bevy_vector_shapes::prelude::*;
 
-const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
+const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
+const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
+const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
 pub fn setup_menu(
     mut commands: Commands,
@@ -46,7 +46,7 @@ pub fn setup_menu(
                         justify_content: JustifyContent::Center,
                         ..default()
                     },
-                    background_color: Color::rgb(0.65, 0.65, 0.65).into(),
+                    background_color: Color::srgb(0.65, 0.65, 0.65).into(),
                     ..default()
                 })
                 .with_children(|parent| {
@@ -59,7 +59,7 @@ pub fn setup_menu(
                                 // justify_content: JustifyContent::FlexStart,
                                 ..default()
                             },
-                            background_color: Color::rgb(0.15, 0.15, 0.15).into(),
+                            background_color: Color::srgb(0.15, 0.15, 0.15).into(),
                             ..default()
                         })
                         .with_children(|parent| {
@@ -145,7 +145,7 @@ pub fn setup_menu(
                                         TextStyle {
                                             font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                                             font_size: 10.0,
-                                            color: Color::rgb(0.9, 0.9, 0.9),
+                                            color: Color::srgb(0.9, 0.9, 0.9),
                                         },
                                     ));
                                 });
@@ -174,7 +174,7 @@ pub fn setup_menu(
                                         TextStyle {
                                             font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                                             font_size: 10.0,
-                                            color: Color::rgb(0.9, 0.9, 0.9),
+                                            color: Color::srgb(0.9, 0.9, 0.9),
                                         },
                                     ));
                                 });
@@ -204,7 +204,7 @@ pub fn setup_menu(
                                         TextStyle {
                                             font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                                             font_size: 10.0,
-                                            color: Color::rgb(0.9, 0.9, 0.9),
+                                            color: Color::srgb(0.9, 0.9, 0.9),
                                         },
                                     ));
                                 });

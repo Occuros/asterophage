@@ -1,5 +1,5 @@
 use crate::building::building_components::{BeltItem, BeltPiece, ConveyorSegment};
-use crate::world_grid::world_gird_components::{Cell, GridPosition, SurfaceLayer, WorldGrid};
+use crate::world_grid::world_gird_components::*;
 use crate::ReflectComponent;
 use bevy::core::Name;
 use bevy::math::Vec3;
@@ -123,22 +123,55 @@ impl ConveyorBelt {
         item.segment_progress = progress;
 
         // Use binary search to find the correct position
-        let position = self
-            .items
-            .binary_search_by(|existing_item| {
-                // Compare first by segment_index, then by segment_progress
-                match existing_item.segment_index.cmp(&item.segment_index) {
-                    std::cmp::Ordering::Equal => existing_item
-                        .segment_progress
-                        .partial_cmp(&item.segment_progress)
-                        .unwrap_or(std::cmp::Ordering::Equal), // Handle NaN gracefully
-                    other => other,
-                }
-            })
-            .unwrap_or_else(|e| e); // Get the position to insert if not found
+        // let position = self
+        //     .items
+        //     .binary_search_by(|existing_item| {
+        //         // Compare first by segment_index, then by segment_progress
+        //         match existing_item.segment_index.cmp(&item.segment_index) {
+        //             std::cmp::Ordering::Equal => existing_item
+        //                 .segment_progress
+        //                 .partial_cmp(&item.segment_progress)
+        //                 .unwrap_or(std::cmp::Ordering::Equal), // Handle NaN gracefully
+        //             other => other,
+        //         }
+        //     })
+        //     .unwrap_or_else(|e| e); // Get the position to insert if not found
 
+        let mut index_to_insert = 0;
+
+        for (i, existing_item) in self.items.iter().enumerate() {
+            if existing_item.segment_index > index {
+                continue;
+            }
+            if existing_item.segment_index < index {
+                index_to_insert = i;
+                break;
+            }
+            if existing_item.segment_index == index {
+                if existing_item.segment_progress > item.segment_progress {
+                    continue;
+                } else {
+                    index_to_insert = i;
+                    break;
+                }
+            }
+        }
+        // let before: Vec<(usize, f32)> = self
+        //     .items
+        //     .iter()
+        //     .map(|i| (i.segment_index, i.segment_progress))
+        //     .collect();
+        // info!("before: {:?}", before);
         // Insert the item at the correct position
-        self.items.insert(position, item);
+        self.items.insert(index_to_insert, item);
+        // info!(
+        //     "after {:?}",
+        //     self.items
+        //         .iter()
+        //         .map(|i| (i.segment_index, i.segment_progress))
+        //         .collect::<Vec<(usize, f32)>>()
+        // );
+        //
     }
 
     pub fn remove_item(&mut self, belt_item: &BeltItem) {
@@ -146,6 +179,7 @@ impl ConveyorBelt {
             .retain(|item| item.item_entity != belt_item.item_entity);
     }
 
+    #[allow(dead_code)]
     pub fn get_belt_piece_at_position(&self, grid_position: &GridPosition) -> Option<&BeltPiece> {
         for belt_piece in &self.belt_pieces {
             if &belt_piece.grid_position == grid_position {
@@ -180,7 +214,8 @@ impl ConveyorBelt {
             if item.segment_index > i {
                 return true;
             };
-            if item.position.distance_squared(position) < item_size {
+
+            if item.position.distance_squared(position) < (item_size * item_size) {
                 return false;
             };
         }

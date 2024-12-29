@@ -10,3 +10,7 @@ pub struct CursorDebugTextEvent {
 
 #[derive(Component)]
 pub struct CursorPositionDebug;
+
+pub struct DebugSettings {
+    pub draw_conveyors: bool,
+}

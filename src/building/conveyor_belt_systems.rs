@@ -21,15 +21,16 @@ pub fn conveyor_system(
 
         for item in &mut conveyor.items {
             let segment = &segments[item.segment_index];
-            let mut start_position = segment.start_position;
-            let mut end_position = segment.end_position;
+            // let mut start_position = segment.start_position;
+            // let mut end_position = segment.end_position;
             let previous_progress = item.segment_progress;
+            let previous_index = item.segment_index;
             // Update segment progress based on speed and time
 
             item.segment_progress += conveyor.belt_speed * time.delta_seconds() / segment.length;
             let item_width_progress = 0.1 / segment.length;
 
-            let mut reached_end = false;
+            // let mut reached_end = false;
             // If progress exceeds 1.0, move to the next segment
             while item.segment_progress >= 1.0 {
                 // Subtract 1.0 to keep remaining progress
@@ -40,16 +41,8 @@ pub fn conveyor_system(
                 if item.segment_index >= segments_length {
                     item.segment_index = segments_length.saturating_sub(1);
                     item.segment_progress = 1.0; // Stop at the end
-
-                    if let Some(next_conveyor) = conveyor.connected_conveyor_belt {
-                        let segment = &segments[item.segment_index];
-                        let position = segment.position_for_progress(item.segment_progress);
-
-                        if let Ok((mut item_transform, _)) = transform_q.get_mut(item.item_entity) {
-                            item_transform.translation = position + Vec3::Y * 0.3;
-                            item.position = position;
-                        }
-
+                    item.position = segment.position_for_progress(item.segment_progress);
+                    if let Some(_) = conveyor.connected_conveyor_belt {
                         commands.trigger_targets(
                             ItemReachedOtherBeltTrigger {
                                 belt_item: item.clone(),
@@ -57,27 +50,24 @@ pub fn conveyor_system(
                             },
                             entity,
                         );
-                        reached_end = true;
+                        // reached_end = true;
                     }
 
                     break;
                 }
             }
 
-            if reached_end {
-                continue;
-            };
-
             let segment = &segments[item.segment_index];
 
             // Update start and end position for the next segment
-            start_position = segment.start_position;
-            end_position = segment.end_position;
+            // start_position = segment.start_position;
+            // end_position = segment.end_position;
             // Check for overlapping and update blocked progress in the current segment
             let max_progress = segment_blocked_progress[item.segment_index];
             if item.segment_progress >= max_progress {
                 // If blocked, revert to previous progress
                 item.segment_progress = previous_progress;
+                item.segment_index = previous_index;
                 segment_blocked_progress[item.segment_index] =
                     item.segment_progress - item_width_progress;
             }
@@ -99,10 +89,10 @@ pub fn segments_changed(
     world_grid: Res<WorldGrid>,
     mut commands: Commands,
 ) {
-    let Ok(mut conveyor_belt) = q_conveyor_belts.get_mut(trigger.entity()) else {
+    let Ok(conveyor_belt) = q_conveyor_belts.get_mut(trigger.entity()) else {
         return;
     };
-    let mut conveyor_belt = conveyor_belt.into_inner();
+    let conveyor_belt = conveyor_belt.into_inner();
 
     conveyor_belt.segments.clear();
     let segments = &mut conveyor_belt.segments;

@@ -45,7 +45,7 @@ pub fn draw_grid(
                 let distance = distance_x.min(distance_y) * 0.1;
                 let grey_value = 0.5;
                 position.y += 0.001;
-                Color::rgba(grey_value, grey_value, grey_value, distance)
+                Color::srgba(grey_value, grey_value, grey_value, distance)
             };
 
             painter.transform.translation = position;

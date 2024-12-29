@@ -1,7 +1,6 @@
-use bevy::prelude::*;
 use avian3d::prelude::*;
-use bevy::color::palettes::css;
 use bevy::color::palettes::css::PURPLE;
+use bevy::prelude::*;
 
 #[derive(Component, Default)]
 pub struct Player {
@@ -32,11 +31,9 @@ impl Bullet {
         mut materials: ResMut<Assets<StandardMaterial>>,
     ) -> Entity {
         let size = 0.05;
-        let shape = Sphere {
-            radius: size,
-        };
+        let shape = Sphere { radius: size };
         let transform = Transform::from_translation(position).with_rotation(rotation);
-        
+
         commands
             .spawn((
                 PbrBundle {
@@ -56,8 +53,6 @@ impl Bullet {
             .id()
     }
 }
-
-
 
 #[derive(Resource, Default)]
 pub struct GameCursor {

@@ -1,15 +1,16 @@
-use bevy::ecs::query::QueryData;
+use self::building_components::*;
+use crate::building::building_components::{
+    BuildingPlacedEvent, BuildingRemovedEvent, ConveyorPlacedEvent, Inserter,
+};
 use crate::building::building_systems::*;
-use bevy::prelude::*;
-use crate::building::building_components::{BuildingPlacedEvent, BuildingRemovedEvent, ConveyorPlacedEvent, Inserter};
 use crate::building::conveyor_belt::ConveyorBelt;
 use crate::building::conveyor_belt_systems::{conveyor_system, segments_changed};
-use self::building_components::*;
+use bevy::prelude::*;
 
 pub mod building_components;
 mod building_systems;
-mod conveyor_belt_systems;
 pub mod conveyor_belt;
+mod conveyor_belt_systems;
 
 pub struct BuildingPlugin;
 

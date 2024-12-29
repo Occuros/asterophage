@@ -2,6 +2,7 @@ mod building;
 mod debug;
 mod general;
 mod player;
+mod save_and_load;
 pub mod utilities;
 mod world_grid;
 
@@ -9,6 +10,7 @@ use crate::building::BuildingPlugin;
 use crate::debug::SmallDebugPlugin;
 use crate::general::GeneralPlugin;
 use crate::player::PlayerPlugin;
+use crate::save_and_load::SaveLoadAsterophagePlugin;
 use crate::world_grid::WorldGridPlugin;
 use avian3d::prelude::*;
 use bevy::prelude::*;
@@ -47,6 +49,7 @@ fn main() {
         .add_plugins(WorldGridPlugin)
         .add_plugins(BuildingPlugin)
         .add_plugins(SmallDebugPlugin)
+        .add_plugins(SaveLoadAsterophagePlugin)
         .run();
 }
 
@@ -61,7 +64,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(1000.0, 1000.0)),
-            material: materials.add(StandardMaterial::from(Color::rgb(0.3, 0.5, 0.3))),
+            material: materials.add(StandardMaterial::from(Color::srgb(0.3, 0.5, 0.3))),
             ..default()
         },
         Collider::cuboid(1000.0, 0.01, 1000.0),
@@ -85,7 +88,7 @@ fn setup(
                     mesh: meshes.add(Mesh::from(Cuboid {
                         half_size: Vec3::splat(size),
                     })),
-                    material: materials.add(Color::rgb(0.8, rng.f32(), 0.6)),
+                    material: materials.add(Color::srgb(0.8, rng.f32(), 0.6)),
                     transform: Transform::from_translation(position),
                     ..default()
                 },

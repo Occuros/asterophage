@@ -1,7 +1,5 @@
 use crate::building::building_components::*;
-use crate::building::conveyor_belt::{
-    ConveyorBelt, ConveyorSegmentsChanged, ItemReachedOtherBeltTrigger,
-};
+use crate::building::conveyor_belt::{ConveyorBelt, ConveyorSegmentsChanged};
 use crate::player::player_components::GameCursor;
 use crate::utilities::utility_methods::find_child_with_name;
 use crate::world_grid::components::yellow_bile::YellowBileItem;
@@ -332,7 +330,6 @@ fn check_for_conveyor_merge(
     };
 
     if primary_conveyor.can_connect_to_start_piece(&secondary_end_piece) {
-        info!("we connect them to the start");
         for bp in primary_conveyor.belt_pieces.iter() {
             let mut b = belt_q.get_mut(bp.entity).unwrap();
             b.conveyor_belt = Some(secondary_conveyor_entity);
@@ -344,8 +341,6 @@ fn check_for_conveyor_merge(
         commands.entity(primary_conveyor_entity).despawn_recursive();
         return Some(secondary_conveyor_entity);
     } else if primary_conveyor.end_piece_can_connect_to(secondary_start_piece) {
-        info!("we connect them to the end");
-
         for bp in secondary_conveyor.belt_pieces.iter() {
             let mut b = belt_q.get_mut(bp.entity).unwrap();
             b.conveyor_belt = Some(primary_conveyor_entity);
