@@ -106,13 +106,10 @@ impl Extractor {
         let model = asset_server.load("models/extractor.glb#Scene0");
         commands
             .spawn((
-                SceneBundle {
-                    scene: model,
-                    transform: Transform::from_translation(position)
-                        .with_rotation(rotation)
-                        .with_scale(Vec3::splat(size)),
-                    ..default()
-                },
+                SceneRoot(model),
+                Transform::from_translation(position)
+                    .with_rotation(rotation)
+                    .with_scale(Vec3::splat(size)),
                 Building {
                     building_type: BuildingType::Extractor,
                 },
@@ -171,12 +168,14 @@ impl BeltElement {
                 Name::new("Belt Piece"),
             ))
             .with_children(|parent| {
-                parent.spawn(SceneBundle {
-                    scene: model,
-                    transform: Transform::from_translation(Vec3::Y * -0.05)
-                        .with_rotation(Quat::from_rotation_y(TAU * 0.25)),
-                    ..default()
-                });
+                parent.spawn((
+                    SceneRoot(model),
+                    Transform {
+                        translation: Vec3::Y * -0.05,
+                        rotation: Quat::from_rotation_y(TAU * 0.25),
+                        ..default()
+                    },
+                ));
             })
             .with_shape_children(&shapes.config(), |shapes| {
                 shapes.hollow = true;
@@ -217,12 +216,11 @@ impl Inserter {
         let model = asset_server.load("models/robot-arm-a.glb#Scene0");
         let entity = commands
             .spawn((
-                SceneBundle {
-                    scene: model,
-                    transform: Transform::from_translation(position)
-                        .with_rotation(rotation)
-                        .with_scale(Vec3::splat(size)),
-                    ..default()
+                SceneRoot(model),
+                Transform {
+                    translation: position,
+                    rotation,
+                    scale: Vec3::splat(size),
                 },
                 Inserter { ..default() },
                 Building {
@@ -230,18 +228,6 @@ impl Inserter {
                 },
                 Name::new("Inserter"),
             ))
-            // .with_shape_children(&shapes.config(), |shapes| {
-            //     shapes.hollow = true;
-            //     shapes.transform = Transform::from_rotation(
-            //         Quat::from_rotation_y(TAU * 0.25) * Quat::from_rotation_x(TAU * 0.25) * Quat::from_rotation_z(TAU * 0.25),
-            //     )
-            //         .with_translation(Vec3::Y * 0.01);
-            //     shapes.thickness = 0.01;
-            //     shapes.color = Color::YELLOW.pastel();
-            //     shapes.ngon(3.0, 0.2);
-            //     shapes.translate(Vec3::Y * -0.15);
-            //     shapes.rect(Vec2::new(0.1, 0.3));
-            // })
             .id();
         entity
     }

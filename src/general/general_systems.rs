@@ -26,191 +26,197 @@ pub fn setup_menu(
     commands
         .spawn((
             TargetCamera(main_camera),
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    justify_content: JustifyContent::SpaceBetween,
-                    ..default()
-                },
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                justify_content: JustifyContent::SpaceBetween,
                 ..default()
             },
         ))
         .with_children(|parent| {
-            // left vertical fill (border)
             parent
-                .spawn(NodeBundle {
-                    style: Style {
+                .spawn((
+                    Node {
                         width: Val::Px(120.),
                         border: UiRect::all(Val::Px(2.)),
                         justify_content: JustifyContent::Center,
                         ..default()
                     },
-                    background_color: Color::srgb(0.65, 0.65, 0.65).into(),
-                    ..default()
-                })
+                    BackgroundColor(Color::srgb(0.65, 0.65, 0.65).into()),
+                ))
                 .with_children(|parent| {
-                    // left vertical fill (content)
                     parent
-                        .spawn(NodeBundle {
-                            style: Style {
+                        .spawn((
+                            Node {
                                 width: Val::Percent(100.),
                                 flex_direction: FlexDirection::Column,
-                                // justify_content: JustifyContent::FlexStart,
                                 ..default()
                             },
-                            background_color: Color::srgb(0.15, 0.15, 0.15).into(),
-                            ..default()
-                        })
+                            BackgroundColor(Color::srgb(0.15, 0.15, 0.15).into()),
+                        ))
                         .with_children(|parent| {
                             //info text
-                            parent.spawn(NodeBundle {
-                                style: Style {
-                                    width: Val::Percent(100.),
-                                    height: Val::Px(20.0),
-                                    ..default()
-                                },
+                            parent.spawn((Node {
+                                width: Val::Percent(100.),
+                                height: Val::Px(20.0),
                                 ..default()
-                            });
+                            },));
                             // text
                             parent.spawn((
-                                TextBundle::from_section(
-                                    "Cursor Position",
-                                    TextStyle {
-                                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                                        font_size: 10.0,
-                                        ..default()
-                                    },
-                                )
-                                .with_style(Style {
+                                Node {
                                     margin: UiRect::all(Val::Px(1.)),
                                     ..default()
-                                }),
-                                // Because this is a distinct label widget and
-                                // not button/list item text, this is necessary
-                                // for accessibility to treat the text accordingly.
+                                },
+                                Text("Cursor Position".to_owned()),
+                                TextFont {
+                                    font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                                    font_size: 10.0,
+                                    ..default()
+                                },
                                 Label,
                                 CursorPositionDebug,
                             ));
 
-                            parent.spawn(NodeBundle {
-                                style: Style {
-                                    width: Val::Percent(100.),
-                                    height: Val::Px(40.0),
-                                    ..default()
-                                },
+                            parent.spawn(Node {
+                                width: Val::Percent(100.),
+                                height: Val::Px(40.0),
                                 ..default()
                             });
                             // text
                             parent.spawn((
-                                TextBundle::from_section(
-                                    "Build Menu",
-                                    TextStyle {
-                                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                                        font_size: 15.0,
-                                        ..default()
-                                    },
-                                )
-                                .with_style(Style {
+                                Node {
                                     margin: UiRect::all(Val::Px(5.)),
                                     ..default()
-                                }),
-                                // Because this is a distinct label widget and
-                                // not button/list item text, this is necessary
-                                // for accessibility to treat the text accordingly.
+                                },
+                                Text("Build Menu".to_string()),
+                                TextFont {
+                                    font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                                    font_size: 15.0,
+                                    ..default()
+                                },
                                 Label,
                             ));
-                            parent
-                                .spawn(ButtonBundle {
-                                    style: Style {
-                                        width: Val::Px(50.),
-                                        height: Val::Px(50.0),
-                                        border: UiRect::all(Val::Px(1.0)),
-                                        // horizontally center child text
-                                        justify_content: JustifyContent::Center,
-                                        // vertically center child text
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    border_color: BorderColor(Color::BLACK),
-                                    background_color: NORMAL_BUTTON.into(),
-                                    ..default()
-                                })
-                                .insert(BuildingButton {
-                                    building_type: BuildingType::Extractor,
-                                })
-                                .with_children(|parent| {
-                                    parent.spawn(TextBundle::from_section(
-                                        "Extractor",
-                                        TextStyle {
-                                            font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                                            font_size: 10.0,
-                                            color: Color::srgb(0.9, 0.9, 0.9),
-                                        },
-                                    ));
-                                });
-                            parent
-                                .spawn(ButtonBundle {
-                                    style: Style {
-                                        width: Val::Px(50.),
-                                        height: Val::Px(50.0),
-                                        border: UiRect::all(Val::Px(1.0)),
-                                        // horizontally center child text
-                                        justify_content: JustifyContent::Center,
-                                        // vertically center child text
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    border_color: BorderColor(Color::BLACK),
-                                    background_color: NORMAL_BUTTON.into(),
-                                    ..default()
-                                })
-                                .insert(BuildingButton {
-                                    building_type: BuildingType::ConveyorBelt,
-                                })
-                                .with_children(|parent| {
-                                    parent.spawn(TextBundle::from_section(
-                                        "Belt",
-                                        TextStyle {
-                                            font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                                            font_size: 10.0,
-                                            color: Color::srgb(0.9, 0.9, 0.9),
-                                        },
-                                    ));
-                                });
 
-                            parent
-                                .spawn(ButtonBundle {
-                                    style: Style {
-                                        width: Val::Px(50.),
-                                        height: Val::Px(50.0),
-                                        border: UiRect::all(Val::Px(1.0)),
-                                        // horizontally center child text
-                                        justify_content: JustifyContent::Center,
-                                        // vertically center child text
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    border_color: BorderColor(Color::BLACK),
-                                    background_color: NORMAL_BUTTON.into(),
-                                    ..default()
-                                })
-                                .insert(BuildingButton {
-                                    building_type: BuildingType::InserterType,
-                                })
-                                .with_children(|parent| {
-                                    parent.spawn(TextBundle::from_section(
-                                        "Inserter",
-                                        TextStyle {
-                                            font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                                            font_size: 10.0,
-                                            color: Color::srgb(0.9, 0.9, 0.9),
-                                        },
-                                    ));
-                                });
+                            // parent
+                            //     .spawn((
+                            //         Node {
+                            //             width: Val::Px(50.),
+                            //             height: Val::Px(50.0),
+                            //             border: UiRect::all(Val::Px(1.0)),
+                            //             // horizontally center child text
+                            //             justify_content: JustifyContent::Center,
+                            //             // vertically center child text
+                            //             align_items: AlignItems::Center,
+                            //             ..default()
+                            //         },
+                            //         BorderColor(Color::BLACK),
+                            //         BackgroundColor(NORMAL_BUTTON.into()),
+                            //         BuildingButton {
+                            //             building_type: BuildingType::Extractor,
+                            //         },
+                            //     ))
+                            //     .with_children(|parent| {
+                            //         parent.spawn((
+                            //             Text("Extractor".to_owned()),
+                            //             TextFont {
+                            //                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                            //                 font_size: 10.0,
+                            //                 ..default()
+                            //             },
+                            //         ));
+                            //     });
+                            // parent
+                            //     .spawn(ButtonBundle {
+                            //         style: Style {
+                            //             width: Val::Px(50.),
+                            //             height: Val::Px(50.0),
+                            //             border: UiRect::all(Val::Px(1.0)),
+                            //             // horizontally center child text
+                            //             justify_content: JustifyContent::Center,
+                            //             // vertically center child text
+                            //             align_items: AlignItems::Center,
+                            //             ..default()
+                            //         },
+                            //         border_color: BorderColor(Color::BLACK),
+                            //         background_color: NORMAL_BUTTON.into(),
+                            //         ..default()
+                            //     })
+                            //     .insert(BuildingButton {
+                            //         building_type: BuildingType::ConveyorBelt,
+                            //     })
+                            //     .with_children(|parent| {
+                            //         parent.spawn(TextBundle::from_section(
+                            //             "Belt",
+                            //             TextStyle {
+                            //                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                            //                 font_size: 10.0,
+                            //                 color: Color::srgb(0.9, 0.9, 0.9),
+                            //             },
+                            //         ));
+                            //     });
+                            //
+                            // parent
+                            //     .spawn(ButtonBundle {
+                            //         style: Style {
+                            //             width: Val::Px(50.),
+                            //             height: Val::Px(50.0),
+                            //             border: UiRect::all(Val::Px(1.0)),
+                            //             // horizontally center child text
+                            //             justify_content: JustifyContent::Center,
+                            //             // vertically center child text
+                            //             align_items: AlignItems::Center,
+                            //             ..default()
+                            //         },
+                            //         border_color: BorderColor(Color::BLACK),
+                            //         background_color: NORMAL_BUTTON.into(),
+                            //         ..default()
+                            //     })
+                            //     .insert(BuildingButton {
+                            //         building_type: BuildingType::InserterType,
+                            //     })
+                            //     .with_children(|parent| {
+                            //         parent.spawn(TextBundle::from_section(
+                            //             "Inserter",
+                            //             TextStyle {
+                            //                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                            //                 font_size: 10.0,
+                            //                 color: Color::srgb(0.9, 0.9, 0.9),
+                            //             },
+                            //         ));
+                            //     });
                         });
                 });
         });
+}
+
+fn menu_button(cmd: &mut Commands, asset_server: &AssetServer) -> Entity {
+    cmd.spawn((
+        Node {
+            width: Val::Px(50.),
+            height: Val::Px(50.0),
+            border: UiRect::all(Val::Px(1.0)),
+            justify_content: JustifyContent::Center,
+            // vertically center child text
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        BorderColor(Color::BLACK),
+        BackgroundColor(NORMAL_BUTTON.into()),
+        BuildingButton {
+            building_type: BuildingType::Extractor,
+        },
+    ))
+    .with_children(|parent| {
+        parent.spawn((
+            Text("Extractor".to_owned()),
+            TextFont {
+                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                font_size: 10.0,
+                ..default()
+            },
+        ));
+    })
+    .id()
 }
 
 pub fn button_highlight_system(
@@ -254,11 +260,11 @@ pub fn update_cursor_system(
     if let Some(cursor_position) = window.cursor_position() {
         let ray = camera.viewport_to_world(camera_transform, cursor_position);
         let filter = SpatialQueryFilter::default();
-        if let Some(ray) = ray {
+        if let Ok(ray) = ray {
             if let Some(hit) =
-                spatial_query.cast_ray(ray.origin, ray.direction, f32::MAX, true, filter)
+                spatial_query.cast_ray(ray.origin, ray.direction, f32::MAX, true, &filter)
             {
-                let position = ray.origin + ray.direction * hit.time_of_impact;
+                let position = ray.origin + ray.direction * hit.distance;
                 game_cursor.world_position = Some(position);
             }
         }

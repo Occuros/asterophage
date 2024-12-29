@@ -19,25 +19,14 @@ pub fn debug_setup(
     let main_camera = camera_query.get_single().unwrap();
     commands.spawn((
         TargetCamera(main_camera),
-        // Create a TextBundle that has a Text with a single section.
-        TextBundle::from_section(
-            // Accepts a `String` or any type that converts into a `String`, such as `&str`
-            "hello\nbevy!",
-            TextStyle {
-                // This font is loaded and will be used instead of the default font.
-                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                font_size: 10.0,
-                ..default()
-            },
-        )
-        .with_text_justify(JustifyText::Left)
-        // Set the style of the TextBundle itself.
-        .with_style(Style {
+        Text("hello\nbevy!".to_owned()),
+        TextLayout::new(JustifyText::Left, LineBreak::NoWrap),
+        Node {
             position_type: PositionType::Absolute,
             bottom: Val::Px(5.0),
             right: Val::Px(5.0),
             ..default()
-        }),
+        },
         DebugText,
         Name::new("Debug Text"),
     ));
@@ -63,13 +52,13 @@ pub fn cursor_position_debug_system(
 
 pub fn move_debug_text_system(
     window_query: Query<&Window>,
-    mut debug_text_q: Query<&mut Style, With<DebugText>>,
+    mut debug_text_q: Query<&mut Node, With<DebugText>>,
 ) {
     let window = window_query.get_single().unwrap();
     if let Some(cursor_position) = window.cursor_position() {
-        let mut style = debug_text_q.single_mut();
-        style.left = Px(cursor_position.x + 20.0);
-        style.top = Px(cursor_position.y + 20.0);
+        let mut node = debug_text_q.single_mut();
+        node.left = Px(cursor_position.x + 20.0);
+        node.top = Px(cursor_position.y + 20.0);
     }
 }
 
@@ -83,7 +72,7 @@ pub fn change_debug_text_system(
     let mut text: Mut<'_, Text> = debut_text_q.single_mut();
 
     for event in debug_text_event.read() {
-        text.sections[0].value = event.text.to_owned();
+        text.0 = event.text.to_owned();
     }
 }
 pub fn debug_draw_conveyors(

@@ -450,7 +450,7 @@ pub fn inserter_animation_system(
         if robot_transform.rotation.angle_between(end_rotation) > 0.01 {
             robot_transform.rotation = robot_transform
                 .rotation
-                .slerp(end_rotation, time.delta_seconds() * 3.0);
+                .slerp(end_rotation, time.delta_secs() * 3.0);
         } else {
             inserter.target_reached = true;
         }

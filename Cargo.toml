@@ -6,29 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.14.2" }
-avian3d = "0.1.2"
-bevy_editor_pls = "0.10.0"
-bevy_framepace = "0.17.1"
-bevy_mod_picking = { version = "0.20.1", default-features = false, features = [
-    "backend_raycast",
-    "backend_bevy_ui",
-    "backend_sprite",
-    "debug",
-    "selection",
-    "highlight",
-] }
-bevy_turborand = "0.9.0"
-bevy_vector_shapes = "0.8.2"
-bevy_mod_billboard = "0.7.0"
+bevy = { version = "0.15.0" }
+avian3d = "0.2.0"
+#bevy_editor_pls = { git = "https://github.com/jakobhellermann/bevy_editor_pls.git" }
+bevy_framepace = "0.18.0"
+bevy_turborand = "0.10.0"
+bevy_vector_shapes = "0.9.3"
+bevy_mod_billboard = { git = "https://github.com/voximity/bevy_mod_billboard.git", branch = "migrate-0.15" }
 bevy_screen_diagnostics = "0.6.0"
 dotenv = "0.15.0"
-noisy_bevy = "0.7.0"
+noisy_bevy = "0.8.0"
 clap = { version = "4.5.4", features = ["derive"] }
 log = "0.4.22"
-bevy_common_assets = "0.11.0"
 serde = { version = "1.0.215", features = ["derive"] }
-bevy-persistent = { version = "0.6.0", features = ["all"] }
+bevy-persistent = { version = "0.7.0", features = ["all"] }
 dirs = { version = "5.0.1" }
 
 # Enable a small amount of optimization in debug mode

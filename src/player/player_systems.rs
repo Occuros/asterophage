@@ -16,14 +16,11 @@ pub fn spawn_player(
 ) {
     // cube
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(Cuboid {
-                half_size: Vec3::splat(0.25),
-            })),
-            material: materials.add(StandardMaterial::from(Color::srgb(0.8, 0.7, 0.6))),
-            transform: Transform::from_xyz(0.0, 0.25, 0.0),
-            ..default()
-        },
+        Mesh3d(meshes.add(Mesh::from(Cuboid {
+            half_size: Vec3::splat(0.25),
+        }))),
+        MeshMaterial3d(materials.add(StandardMaterial::from(Color::srgb(0.8, 0.7, 0.6)))),
+        Transform::from_xyz(0.0, 0.25, 0.0),
         Player::default(),
         Collider::cuboid(0.25, 0.25, 0.25),
         Name::new("Player"),
@@ -56,7 +53,7 @@ pub fn move_player(
             direction = direction.normalize();
         }
 
-        transform.translation += direction * PLAYER_SPEED * time.delta_seconds();
+        transform.translation += direction * PLAYER_SPEED * time.delta_secs();
         player.local_aim_target =
             transform.transform_point(game_cursor.world_position.unwrap_or_default());
     }
@@ -142,7 +139,7 @@ pub fn life_time_system(
     mut life_time_query: Query<(Entity, &mut LifeTime)>,
 ) {
     for (e, mut life_time) in life_time_query.iter_mut() {
-        life_time.time_left = (life_time.time_left - time.delta_seconds()).max(0.0);
+        life_time.time_left = (life_time.time_left - time.delta_secs()).max(0.0);
         if life_time.time_left <= 0.0 {
             commands.entity(e).despawn()
         }

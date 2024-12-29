@@ -36,7 +36,7 @@ impl Plugin for BuildingPlugin {
             .add_systems(Update, conveyor_system)
 
             .add_systems(PostUpdate, destroy_building_system)
-            .observe(segments_changed)
+            .add_observer(segments_changed)
 
         // .add_systems(Update, test_place_building_system)
 

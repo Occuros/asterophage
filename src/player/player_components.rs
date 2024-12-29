@@ -36,12 +36,8 @@ impl Bullet {
 
         commands
             .spawn((
-                PbrBundle {
-                    transform,
-                    mesh: meshes.add(Mesh::try_from(shape).unwrap()),
-                    material: materials.add(StandardMaterial::from_color(PURPLE)),
-                    ..default()
-                },
+                Mesh3d(meshes.add(Mesh::try_from(shape).unwrap())),
+                MeshMaterial3d(materials.add(StandardMaterial::from_color(PURPLE))),
                 Bullet {},
                 RigidBody::Dynamic,
                 Collider::sphere(size),

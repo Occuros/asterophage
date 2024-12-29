@@ -27,7 +27,7 @@ pub fn conveyor_system(
             let previous_index = item.segment_index;
             // Update segment progress based on speed and time
 
-            item.segment_progress += conveyor.belt_speed * time.delta_seconds() / segment.length;
+            item.segment_progress += conveyor.belt_speed * time.delta_secs() / segment.length;
             let item_width_progress = 0.1 / segment.length;
 
             // let mut reached_end = false;

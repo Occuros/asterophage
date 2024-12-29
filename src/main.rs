@@ -14,7 +14,6 @@ use crate::save_and_load::SaveLoadAsterophagePlugin;
 use crate::world_grid::WorldGridPlugin;
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use bevy_editor_pls::prelude::*;
 use bevy_mod_billboard::prelude::*;
 use bevy_turborand::prelude::*;
 use bevy_vector_shapes::prelude::*;
@@ -38,7 +37,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(BillboardPlugin)
-        .add_plugins(EditorPlugin::default())
+        // .add_plugins(EditorPlugin::default())
         .add_plugins(ShapePlugin::default())
         .add_plugins(RngPlugin::new().with_rng_seed(135))
         // .add_plugins(bevy_framepace::FramepacePlugin)
@@ -50,6 +49,7 @@ fn main() {
         .add_plugins(BuildingPlugin)
         .add_plugins(SmallDebugPlugin)
         .add_plugins(SaveLoadAsterophagePlugin)
+        // .insert_resource(Time::<Fixed>::from_hz(60.0))
         .run();
 }
 
@@ -60,17 +60,31 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut rng: ResMut<GlobalRng>,
 ) {
+    let cube_mesh = meshes.add(Cuboid::default());
+
     // plane
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(1000.0, 1000.0)),
-            material: materials.add(StandardMaterial::from(Color::srgb(0.3, 0.5, 0.3))),
+        Mesh3d(cube_mesh.clone()),
+        MeshMaterial3d(materials.add(StandardMaterial::from(Color::srgb(0.3, 0.5, 0.3)))),
+        Transform {
+            translation: Vec3::new(0.0, -0.005, 0.0),
+            scale: Vec3::new(100.0, 0.01, 100.0),
             ..default()
         },
-        Collider::cuboid(1000.0, 0.01, 1000.0),
+        Collider::cuboid(1.0, 1.0, 1.0),
         RigidBody::Static,
         Name::new("Floor"),
     ));
+
+    let cube_mesh = meshes.add(Cuboid::default());
+    //
+    // commands.spawn((
+    //     Mesh3d(cube_mesh.clone()),
+    //     MeshMaterial3d(materials.add(Color::srgb(0.7, 0.7, 0.8))),
+    //     Transform::from_xyz(0.0, -2.0, 0.0).with_scale(Vec3::new(100.0, 1.0, 100.0)),
+    //     RigidBody::Static,
+    //     Collider::cuboid(1.0, 1.0, 1.0),
+    // ));
 
     for _i in 0..30 {
         let size = 0.25;
@@ -81,23 +95,21 @@ fn setup(
             rng.f32_normalized() * max_position,
         );
 
+        let cube_mesh = meshes.add(Mesh::from(Cuboid {
+            half_size: Vec3::splat(size),
+        }));
+
+        let collider_size = size * 0.5;
         // cube
         let _ = commands
             .spawn((
-                PbrBundle {
-                    mesh: meshes.add(Mesh::from(Cuboid {
-                        half_size: Vec3::splat(size),
-                    })),
-                    material: materials.add(Color::srgb(0.8, rng.f32(), 0.6)),
-                    transform: Transform::from_translation(position),
-                    ..default()
-                },
+                Mesh3d(cube_mesh.clone()),
+                MeshMaterial3d(materials.add(Color::srgb(0.8, rng.f32(), 0.6))),
+                Transform::from_translation(position),
                 RigidBody::Dynamic,
-                Collider::cuboid(size * 0.5, size * 0.5, size * 0.5),
-                Friction::new(0.9)
-                    .with_dynamic_coefficient(0.9)
-                    .with_combine_rule(CoefficientCombine::Max),
+                Collider::cuboid(collider_size, collider_size, collider_size),
                 Name::new("cube"),
+                Mass(10.0),
             ))
             .id();
 
@@ -120,10 +132,8 @@ fn setup(
 
     // camera
     commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        },
+        Camera3d::default(),
+        Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         MainCamera {},
     ));
 }
