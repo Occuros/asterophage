@@ -31,7 +31,7 @@ pub fn place_building_system(
     let grid_size = world_grid.grid_size;
     let position = game_cursor.world_position.unwrap();
 
-    let grid_position = world_grid.get_grid_position_from_world_position(position);
+    let grid_position = world_grid.grid_position_from_world_position(position);
     let building_position = world_grid.grid_to_world(&grid_position);
 
     if let Some(cell) = world_grid.cells.get_mut(&grid_position) {
@@ -90,7 +90,7 @@ pub fn remove_building_system(
     }
     let position = game_cursor.world_position.unwrap();
 
-    let grid_position = world_grid.get_grid_position_from_world_position(position);
+    let grid_position = world_grid.grid_position_from_world_position(position);
     if let Some(cell) = world_grid.cells.get_mut(&grid_position) {
         match cell.surface_layer {
             SurfaceLayer::Building { entity } => {
@@ -160,7 +160,7 @@ pub fn respond_to_belt_element_removal(
             return;
         };
         conveyor.items.retain(|item| {
-            let grid_position = world_grid.get_grid_position_from_world_position(item.position);
+            let grid_position = world_grid.grid_position_from_world_position(item.position);
             if event.grid_position == grid_position {
                 commands.entity(item.item_entity).despawn_recursive();
                 false
@@ -219,6 +219,8 @@ pub fn handle_conveyor_placement_system(
 ) {
     for conveyor_placement in belt_element_placed_event.read() {
         let conveyor = conveyor_q.get(conveyor_placement.entity).unwrap();
+        let message = format!("conveyor belt got placed {:?}", conveyor);
+        info!("{}", message);
         let belt_transform = transform_q.get(conveyor.belt_pieces[0].entity).unwrap();
         let mut primary_conveyor_entity = conveyor_placement.entity;
 
@@ -226,7 +228,7 @@ pub fn handle_conveyor_placement_system(
         let grid_rotation = belt_transform.grid_rotation();
 
         let forward_position = world_grid
-            .get_grid_position_from_world_position(belt_transform.translation)
+            .grid_position_from_world_position(belt_transform.translation)
             .get_relative_forward(grid_rotation);
         let backward_position: GridPosition = grid_position.get_relative_back(grid_rotation);
         let left_position = grid_position.get_relative_left(grid_rotation);
@@ -373,7 +375,7 @@ pub fn extract_resources_system(
         if !extractor.timer.finished() {
             continue;
         }
-        let grid_position = world_grid.get_grid_position_from_world_position(transform.translation);
+        let grid_position = world_grid.grid_position_from_world_position(transform.translation);
         let potential_positions = grid_position.get_all_surrounding_positions();
         for p in potential_positions.iter() {
             let Some(cell) = world_grid.cells.get(p) else {

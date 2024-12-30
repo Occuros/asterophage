@@ -129,7 +129,7 @@ impl Extractor {
     }
 }
 
-#[derive(Component, Default, Reflect)]
+#[derive(Component, Default, Reflect, Debug)]
 #[reflect(Component)]
 pub struct BeltElement {
     pub speed: f32,
@@ -268,25 +268,49 @@ impl ConveyorSegment {
         }
     }
     pub fn point_on_segment(&self, point: Vec3) -> bool {
-        let a = self.start_position;
-        let b = self.end_position;
-        let ab = a - b;
-        let ap = point - a;
+        let start = self.start_position;
+        let end = self.end_position;
+        let width = 0.25;
+        // Vector from start to end
+        let ab = end - start;
+        // Length of the segment
+        let ab_length = ab.length();
+        // Unit vector in the direction of ab
+        let ab_unit = ab / ab_length;
 
-        // Calculate the cross product to check collinearity
-        let cross = ab.cross(ap);
+        // Perpendicular vector to ab in the XZ plane
+        let perp = Vec3::new(-ab_unit.z, 0.0, ab_unit.x);
 
-        // Check if the cross product is close to zero (collinear)
-        if cross.length_squared() > f32::EPSILON {
-            return false;
-        }
+        // Half-width vector
+        let half_width_vector = perp * (width / 2.0);
 
-        // Check if the point is within the bounds of the segment
-        let within_x_bounds = (point.x >= a.x.min(b.x)) && (point.x <= a.x.max(b.x));
-        let within_y_bounds = (point.y >= a.y.min(b.y)) && (point.y <= a.y.max(b.y));
-        let within_z_bounds = (point.z >= a.z.min(b.z)) && (point.z <= a.z.max(b.z));
+        // Define the four corners of the rectangle
+        let corner1 = start + half_width_vector;
+        let corner2 = start - half_width_vector;
+        let corner3 = end + half_width_vector;
+        let corner4 = end - half_width_vector;
 
-        within_x_bounds && within_y_bounds && within_z_bounds
+        // Vectors from point to each corner
+        let ap = point - corner1;
+        let bp = point - corner2;
+        let cp = point - corner3;
+        let dp = point - corner4;
+
+        // Calculate cross products to determine if point is on the correct side of each edge
+        let cross1 = ab_unit.cross(ap);
+        let cross2 = ab_unit.cross(bp);
+        let cross3 = ab_unit.cross(cp);
+        let cross4 = ab_unit.cross(dp);
+
+        // Check if point is within the parallel lines defined by the rectangle's width
+        let within_width = cross1.y * cross2.y <= 0.0 && cross3.y * cross4.y <= 0.0;
+
+        // Check if point is within the length of the rectangle
+        let dot1 = ab_unit.dot(ap);
+        let dot2 = ab_unit.dot(bp);
+        let within_length = dot1 >= 0.0 && dot1 <= ab_length && dot2 >= 0.0 && dot2 <= ab_length;
+
+        within_width && within_length
     }
 
     pub fn progress_for_point(&self, point: Vec3) -> f32 {

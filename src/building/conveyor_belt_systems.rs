@@ -70,6 +70,14 @@ pub fn conveyor_system(
                 item.segment_index = previous_index;
                 segment_blocked_progress[item.segment_index] =
                     item.segment_progress - item_width_progress;
+
+                // info!(
+                //     "{}:{} max progress {} new progress: {}",
+                //     item.item_entity,
+                //     item.segment_index,
+                //     max_progress,
+                //     item.segment_progress - item_width_progress
+                // );
             }
 
             let position = segment.position_for_progress(item.segment_progress);
@@ -191,7 +199,10 @@ pub fn segments_changed(
         let position = item.position;
         let segment_index = conveyor_belt
             .get_segment_index_for_position(position)
-            .unwrap();
+            .expect(&format!(
+                "Failed to get segment index for conveyor {:?} item: {:?}",
+                conveyor_belt.segments, item
+            ));
         let segment: &ConveyorSegment = &conveyor_belt.segments[segment_index];
         let progress = segment.progress_for_point(item.position);
         item_updates.push((segment_index, progress));

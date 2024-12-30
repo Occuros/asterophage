@@ -20,10 +20,10 @@ pub fn draw_grid(
     painter.set_rotation(rotation);
     painter.thickness = 0.01;
     let cursor_grid_position = world_grid
-        .get_grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
+        .grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
 
     let player_transform = player_q.single();
-    let center = world_grid.get_grid_position_from_world_position(player_transform.translation);
+    let center = world_grid.grid_position_from_world_position(player_transform.translation);
     let draw_distance = 50;
 
     for x in center.x - draw_distance..=center.x + draw_distance {
@@ -90,7 +90,7 @@ pub fn discover_world_system(
     painter.thickness = 0.01;
 
     let player_transform = player_q.single();
-    let center = world_grid.get_grid_position_from_world_position(player_transform.translation);
+    let center = world_grid.grid_position_from_world_position(player_transform.translation);
     let draw_distance = 20;
 
     for x in center.x - draw_distance..=center.x + draw_distance {

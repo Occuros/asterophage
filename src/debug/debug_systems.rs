@@ -1,22 +1,32 @@
+use crate::building::building_components::{BeltElement, ConveyorSegment};
 use crate::building::conveyor_belt::ConveyorBelt;
 use crate::debug::debug_components::*;
+use crate::general::general_components::GeneralAssets;
 use crate::player::player_components::GameCursor;
 use crate::world_grid::world_gird_components::*;
 use crate::MainCamera;
-use bevy::color::palettes::css::{PURPLE, RED};
-use bevy::color::palettes::tailwind::{GREEN_500, PINK_600};
+use bevy::color::palettes::css::*;
+use bevy::color::palettes::tailwind::*;
 use bevy::prelude::*;
-use bevy::ui::Val::Px;
 use bevy_vector_shapes::painter::ShapePainter;
 use bevy_vector_shapes::prelude::*;
 use std::f32::consts::TAU;
 
 pub fn debug_setup(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    general_assets: Res<GeneralAssets>,
     camera_query: Query<Entity, With<MainCamera>>,
+    mut config_store: ResMut<GizmoConfigStore>,
 ) {
     let main_camera = camera_query.get_single().unwrap();
+    for (_, config, _) in config_store.iter_mut() {
+        config.depth_bias = -1.;
+    }
+    let segment = ConveyorSegment::new(Vec3::new(0.0, 0.0, -1.5), Vec3::new(-3.25, 0.0, -1.5));
+    let point = Vec3::new(-0.3258169, 0.0, -1.4999999);
+
+    info!("is point on segment {}", segment.point_on_segment(point));
+
     commands.spawn((
         TargetCamera(main_camera),
         Text("hello\nbevy!".to_owned()),
@@ -27,8 +37,34 @@ pub fn debug_setup(
             right: Val::Px(5.0),
             ..default()
         },
+        TextFont {
+            font: general_assets.default_font.clone(),
+            font_size: 10.0,
+            ..default()
+        },
         DebugText,
         Name::new("Debug Text"),
+    ));
+
+    commands.spawn((
+        TargetCamera(main_camera),
+        TextLayout::new(JustifyText::Left, LineBreak::NoWrap),
+        Node {
+            position_type: PositionType::Absolute,
+            align_content: AlignContent::FlexStart,
+            align_items: AlignItems::FlexStart,
+            flex_direction: FlexDirection::Column, // Stack children vertically
+            bottom: Val::Px(5.0),
+            right: Val::Px(5.0),
+            min_width: Val::Px(100.0),
+            min_height: Val::Px(60.0),
+            padding: UiRect::all(Val::Px(5.0)),
+            ..default()
+        },
+        BackgroundColor(GRAY_900.into()),
+        BorderRadius::all(Val::Px(5.0)),
+        Name::new("Debug Info Panel"),
+        DebugInfoPanel::default(),
     ));
 }
 
@@ -38,7 +74,7 @@ pub fn cursor_position_debug_system(
     world_grid: Res<WorldGrid>,
 ) {
     let position = world_grid
-        .get_grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
+        .grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
 
     let world_position = game_cursor.world_position.unwrap_or_default();
     debug_text_event.send(CursorDebugTextEvent {
@@ -57,8 +93,8 @@ pub fn move_debug_text_system(
     let window = window_query.get_single().unwrap();
     if let Some(cursor_position) = window.cursor_position() {
         let mut node = debug_text_q.single_mut();
-        node.left = Px(cursor_position.x + 20.0);
-        node.top = Px(cursor_position.y + 20.0);
+        node.left = Val::Px(cursor_position.x + 20.0);
+        node.top = Val::Px(cursor_position.y + 20.0);
     }
 }
 
@@ -69,7 +105,7 @@ pub fn change_debug_text_system(
     if debut_text_q.get_single().is_err() {
         return;
     }
-    let mut text: Mut<'_, Text> = debut_text_q.single_mut();
+    let mut text = debut_text_q.single_mut();
 
     for event in debug_text_event.read() {
         text.0 = event.text.to_owned();
@@ -132,4 +168,149 @@ pub fn debug_draw_conveyors(
             }
         }
     }
+}
+
+pub fn hover_selection_system(
+    game_cursor: Res<GameCursor>,
+    world_grid: Res<WorldGrid>,
+    mut debug_info_panel_q: Single<&mut DebugInfoPanel>,
+) {
+    let Some(world_position) = game_cursor.world_position else {
+        return;
+    };
+    let grid_position = world_grid.grid_position_from_world_position(world_position);
+    let Some(cell) = world_grid.cells.get(&grid_position) else {
+        return;
+    };
+    let mut debug_info_panel = debug_info_panel_q.into_inner();
+    match cell.surface_layer {
+        SurfaceLayer::Empty => {
+            debug_info_panel.selected_entity = None;
+        }
+        SurfaceLayer::Building { entity } => debug_info_panel.selected_entity = Some(entity),
+        SurfaceLayer::Resource { entity } => {
+            debug_info_panel.selected_entity = None;
+        }
+    }
+}
+
+pub fn debug_hover_system(
+    mut commands: Commands,
+    mut info_panel_q: Single<(Entity, &DebugInfoPanel)>,
+    general_assets: Res<GeneralAssets>,
+    belt_q: Query<&BeltElement>,
+    conveyor_q: Query<&ConveyorBelt>,
+    mut gizmos: Gizmos,
+) {
+    let (entity, info_panel) = info_panel_q.into_inner();
+
+    commands.entity(entity).despawn_descendants();
+
+    let Some(building_entity) = info_panel.selected_entity else {
+        return;
+    };
+
+    if let Some(conveyor) = belt_q
+        .get(building_entity)
+        .ok()
+        .and_then(|belt| belt.conveyor_belt)
+        .and_then(|conveyor_entity| conveyor_q.get(conveyor_entity).ok())
+    {
+        let up = Vec3::Y * 0.1;
+        for segment in &conveyor.segments {
+            let dir = segment.direction;
+            let perp = Vec3::new(-dir.z, 0.0, dir.x).normalize();
+            let offset = perp * 0.25;
+            gizmos.line(
+                segment.start_position + up - offset,
+                segment.end_position + up - offset,
+                ORANGE_400,
+            );
+            gizmos.line(
+                segment.start_position + up + offset,
+                segment.end_position + up + offset,
+                ORANGE_400,
+            );
+        }
+
+        let up = Vec3::Y * 0.00;
+        for item in &conveyor.items {
+            gizmos.circle(
+                Isometry3d::new(item.position + up, Quat::from_rotation_x(TAU * 0.25)),
+                0.05,
+                RED_500,
+            );
+        }
+        commands.entity(entity).with_children(|commands| {
+            commands.spawn((
+                Text("Conveyor".to_owned()),
+                TextFont {
+                    font: general_assets.default_font.clone(),
+                    font_size: 12.0,
+                    ..default()
+                },
+            ));
+            commands.spawn((
+                Text(format!("segments: {}", conveyor.belt_pieces.len())),
+                TextFont {
+                    font: general_assets.default_font.clone(),
+                    font_size: 10.0,
+                    ..default()
+                },
+            ));
+
+            commands.spawn((
+                Text(format!("items: {}", conveyor.items.len())),
+                TextFont {
+                    font: general_assets.default_font.clone(),
+                    font_size: 10.0,
+                    ..default()
+                },
+            ));
+
+            for (i, item) in conveyor.items.iter().enumerate() {
+                commands.spawn((
+                    Text(format!("i: {} p:{:.2}", i, item.segment_progress)),
+                    TextFont {
+                        font: general_assets.default_font.clone(),
+                        font_size: 10.0,
+                        ..default()
+                    },
+                ));
+            }
+        });
+    }
+    // if let Ok(belt) = belt_q.get(building_entity) {
+    //     if let Some(conveyor_entity) = belt.conveyor_belt {
+    //         if let Ok(conveyor) = conveyor_q.get(conveyor_entity) {
+    //             commands.entity(entity).with_children(|commands| {
+    //                 commands.spawn((
+    //                     Text("Conveyor".to_owned()),
+    //                     TextFont {
+    //                         font: general_assets.default_font.clone(),
+    //                         font_size: 12.0,
+    //                         ..default()
+    //                     },
+    //                 ));
+    //                 commands.spawn((
+    //                     Text(format!("segments: {}", conveyor.belt_pieces.len())),
+    //                     TextFont {
+    //                         font: general_assets.default_font.clone(),
+    //                         font_size: 10.0,
+    //                         ..default()
+    //                     },
+    //                 ));
+    //
+    //                 commands.spawn((
+    //                     Text(format!("items: {}", conveyor.items.len())),
+    //                     TextFont {
+    //                         font: general_assets.default_font.clone(),
+    //                         font_size: 10.0,
+    //                         ..default()
+    //                     },
+    //                 ));
+    //             });
+    //         }
+    //     }
+    // }
 }

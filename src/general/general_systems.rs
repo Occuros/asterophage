@@ -22,6 +22,7 @@ pub fn setup_menu(
     asset_server: Res<AssetServer>,
 ) {
     let main_camera = camera_query.get_single().unwrap();
+    let font = asset_server.load("fonts/FiraMono-Medium.ttf");
     // root node
     commands
         .spawn((
@@ -97,100 +98,23 @@ pub fn setup_menu(
                                 Label,
                             ));
 
-                            // parent
-                            //     .spawn((
-                            //         Node {
-                            //             width: Val::Px(50.),
-                            //             height: Val::Px(50.0),
-                            //             border: UiRect::all(Val::Px(1.0)),
-                            //             // horizontally center child text
-                            //             justify_content: JustifyContent::Center,
-                            //             // vertically center child text
-                            //             align_items: AlignItems::Center,
-                            //             ..default()
-                            //         },
-                            //         BorderColor(Color::BLACK),
-                            //         BackgroundColor(NORMAL_BUTTON.into()),
-                            //         BuildingButton {
-                            //             building_type: BuildingType::Extractor,
-                            //         },
-                            //     ))
-                            //     .with_children(|parent| {
-                            //         parent.spawn((
-                            //             Text("Extractor".to_owned()),
-                            //             TextFont {
-                            //                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                            //                 font_size: 10.0,
-                            //                 ..default()
-                            //             },
-                            //         ));
-                            //     });
-                            // parent
-                            //     .spawn(ButtonBundle {
-                            //         style: Style {
-                            //             width: Val::Px(50.),
-                            //             height: Val::Px(50.0),
-                            //             border: UiRect::all(Val::Px(1.0)),
-                            //             // horizontally center child text
-                            //             justify_content: JustifyContent::Center,
-                            //             // vertically center child text
-                            //             align_items: AlignItems::Center,
-                            //             ..default()
-                            //         },
-                            //         border_color: BorderColor(Color::BLACK),
-                            //         background_color: NORMAL_BUTTON.into(),
-                            //         ..default()
-                            //     })
-                            //     .insert(BuildingButton {
-                            //         building_type: BuildingType::ConveyorBelt,
-                            //     })
-                            //     .with_children(|parent| {
-                            //         parent.spawn(TextBundle::from_section(
-                            //             "Belt",
-                            //             TextStyle {
-                            //                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                            //                 font_size: 10.0,
-                            //                 color: Color::srgb(0.9, 0.9, 0.9),
-                            //             },
-                            //         ));
-                            //     });
-                            //
-                            // parent
-                            //     .spawn(ButtonBundle {
-                            //         style: Style {
-                            //             width: Val::Px(50.),
-                            //             height: Val::Px(50.0),
-                            //             border: UiRect::all(Val::Px(1.0)),
-                            //             // horizontally center child text
-                            //             justify_content: JustifyContent::Center,
-                            //             // vertically center child text
-                            //             align_items: AlignItems::Center,
-                            //             ..default()
-                            //         },
-                            //         border_color: BorderColor(Color::BLACK),
-                            //         background_color: NORMAL_BUTTON.into(),
-                            //         ..default()
-                            //     })
-                            //     .insert(BuildingButton {
-                            //         building_type: BuildingType::InserterType,
-                            //     })
-                            //     .with_children(|parent| {
-                            //         parent.spawn(TextBundle::from_section(
-                            //             "Inserter",
-                            //             TextStyle {
-                            //                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                            //                 font_size: 10.0,
-                            //                 color: Color::srgb(0.9, 0.9, 0.9),
-                            //             },
-                            //         ));
-                            //     });
+                            menu_button(parent, font.clone(), "Extractor", BuildingType::Extractor);
+                            menu_button(parent, font.clone(), "Belt", BuildingType::ConveyorBelt);
+                            menu_button(parent, font, "Inserter", BuildingType::InserterType);
                         });
                 });
         });
 }
+use bevy::prelude::*;
 
-fn menu_button(cmd: &mut Commands, asset_server: &AssetServer) -> Entity {
+fn menu_button(
+    cmd: &mut ChildBuilder,
+    font: Handle<Font>,
+    name: &str,
+    building_type: BuildingType,
+) -> Entity {
     cmd.spawn((
+        Button,
         Node {
             width: Val::Px(50.),
             height: Val::Px(50.0),
@@ -202,15 +126,13 @@ fn menu_button(cmd: &mut Commands, asset_server: &AssetServer) -> Entity {
         },
         BorderColor(Color::BLACK),
         BackgroundColor(NORMAL_BUTTON.into()),
-        BuildingButton {
-            building_type: BuildingType::Extractor,
-        },
+        BuildingButton { building_type },
     ))
     .with_children(|parent| {
         parent.spawn((
-            Text("Extractor".to_owned()),
+            Text(name.to_owned()),
             TextFont {
-                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                font,
                 font_size: 10.0,
                 ..default()
             },
@@ -318,7 +240,7 @@ pub fn move_building_preview_with_cursor_system(
         return;
     }
     let cursor_grid_position = world_grid
-        .get_grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
+        .grid_position_from_world_position(game_cursor.world_position.unwrap_or_default());
     let cursor_position = world_grid.grid_to_world(&cursor_grid_position);
     if let Ok(mut transform) = transform_q.get_mut(game_cursor.preview_entity.unwrap()) {
         transform.translation = cursor_position + Vec3::Y * 0.1;

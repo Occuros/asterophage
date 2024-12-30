@@ -13,11 +13,14 @@ use crate::player::PlayerPlugin;
 use crate::save_and_load::SaveLoadAsterophagePlugin;
 use crate::world_grid::WorldGridPlugin;
 use avian3d::prelude::*;
+use bevy::log::{tracing_subscriber, LogPlugin};
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 use bevy_turborand::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use dotenv::dotenv;
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::Layer;
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum AppState {
@@ -33,6 +36,18 @@ pub struct MainCamera {}
 fn main() {
     dotenv().ok();
 
+    let log_plugin = LogPlugin {
+        filter: "info".into(),
+        level: bevy::log::Level::INFO,
+        custom_layer: |app: &mut App| {
+            let subscriber = tracing_subscriber::fmt::layer()
+                .with_span_events(FmtSpan::FULL)
+                .with_file(true) // Include file paths
+                .with_line_number(true) // Include line numbers
+                .boxed();
+            Some(subscriber)
+        },
+    };
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(PhysicsPlugins::default())

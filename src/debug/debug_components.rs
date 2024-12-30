@@ -14,3 +14,8 @@ pub struct CursorPositionDebug;
 pub struct DebugSettings {
     pub draw_conveyors: bool,
 }
+
+#[derive(Component, Reflect, Default, Debug)]
+pub struct DebugInfoPanel {
+    pub selected_entity: Option<Entity>,
+}

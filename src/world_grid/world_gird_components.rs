@@ -248,7 +248,7 @@ impl GridPiece for Transform {
     }
 
     fn grid_position(&self, grid: &WorldGrid) -> GridPosition {
-        grid.get_grid_position_from_world_position(self.translation)
+        grid.grid_position_from_world_position(self.translation)
     }
 }
 
@@ -315,11 +315,11 @@ impl WorldGrid {
     }
     #[allow(dead_code)]
     pub fn set_cell_at_world_position(&mut self, position: Vec3, cell: Cell) {
-        let grid_position = self.get_grid_position_from_world_position(position);
+        let grid_position = self.grid_position_from_world_position(position);
         self.cells.insert(grid_position, cell);
     }
 
-    pub fn get_grid_position_from_world_position(&self, position: Vec3) -> GridPosition {
+    pub fn grid_position_from_world_position(&self, position: Vec3) -> GridPosition {
         let x = ((position.x + self.grid_size * 0.5) / self.grid_size).floor() as i32;
         let y = ((position.z + self.grid_size * 0.5) / self.grid_size).floor() as i32;
         GridPosition { x, y }

@@ -4,6 +4,7 @@ use crate::ReflectComponent;
 use bevy::core::Name;
 use bevy::math::Vec3;
 use bevy::prelude::*;
+use bevy::utils::info;
 
 #[derive(Component, Default, Reflect, Debug)]
 #[reflect(Component)]
@@ -45,7 +46,7 @@ impl ConveyorBelt {
             .spawn((
                 ConveyorBelt {
                     belt_pieces: vec![belt_piece],
-                    belt_speed: 0.50,
+                    belt_speed: 2.50,
                     ..default()
                 },
                 Name::new("Conveyor"),
@@ -122,22 +123,7 @@ impl ConveyorBelt {
         item.segment_index = index;
         item.segment_progress = progress;
 
-        // Use binary search to find the correct position
-        // let position = self
-        //     .items
-        //     .binary_search_by(|existing_item| {
-        //         // Compare first by segment_index, then by segment_progress
-        //         match existing_item.segment_index.cmp(&item.segment_index) {
-        //             std::cmp::Ordering::Equal => existing_item
-        //                 .segment_progress
-        //                 .partial_cmp(&item.segment_progress)
-        //                 .unwrap_or(std::cmp::Ordering::Equal), // Handle NaN gracefully
-        //             other => other,
-        //         }
-        //     })
-        //     .unwrap_or_else(|e| e); // Get the position to insert if not found
-
-        let mut index_to_insert = 0;
+        let mut index_to_insert = self.items.len();
 
         for (i, existing_item) in self.items.iter().enumerate() {
             if existing_item.segment_index > index {
@@ -148,7 +134,7 @@ impl ConveyorBelt {
                 break;
             }
             if existing_item.segment_index == index {
-                if existing_item.segment_progress > item.segment_progress {
+                if existing_item.segment_progress >= item.segment_progress {
                     continue;
                 } else {
                     index_to_insert = i;
@@ -156,22 +142,8 @@ impl ConveyorBelt {
                 }
             }
         }
-        // let before: Vec<(usize, f32)> = self
-        //     .items
-        //     .iter()
-        //     .map(|i| (i.segment_index, i.segment_progress))
-        //     .collect();
-        // info!("before: {:?}", before);
-        // Insert the item at the correct position
+
         self.items.insert(index_to_insert, item);
-        // info!(
-        //     "after {:?}",
-        //     self.items
-        //         .iter()
-        //         .map(|i| (i.segment_index, i.segment_progress))
-        //         .collect::<Vec<(usize, f32)>>()
-        // );
-        //
     }
 
     pub fn remove_item(&mut self, belt_item: &BeltItem) {

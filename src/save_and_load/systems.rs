@@ -52,7 +52,7 @@ pub fn load_buildings_system(
     };
 
     info!("placing building: {:?}", building);
-    let grid_position = world_grid.get_grid_position_from_world_position(building.position);
+    let grid_position = world_grid.grid_position_from_world_position(building.position);
     let Some(cell) = world_grid.cells.get_mut(&grid_position) else {
         return;
     };

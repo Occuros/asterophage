@@ -18,7 +18,9 @@ impl Plugin for SmallDebugPlugin {
             .add_systems(Update, move_debug_text_system)
             .add_systems(Update, change_debug_text_system)
             .add_systems(Update, cursor_position_debug_system)
-            .add_systems(Update, debug_draw_conveyors)
+            // .add_systems(Update, debug_draw_conveyors)
+            .add_systems(Update, debug_hover_system)
+            .add_systems(Update, hover_selection_system)
 
             // .add_systems(Update, draw_belt_forward)
             ;
