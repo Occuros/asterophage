@@ -26,7 +26,6 @@ pub fn detect_save_and_load_key_press_system(
 pub fn load_buildings_system(
     mut load_event: EventReader<LoadFromSaveSlot>,
     mut save_slots: Res<Persistent<SaveSlots>>,
-
     mut commands: Commands,
     mut shapes: ShapeCommands,
     mut asset_server: ResMut<AssetServer>,

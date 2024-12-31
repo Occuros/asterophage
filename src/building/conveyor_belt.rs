@@ -114,7 +114,7 @@ impl ConveyorBelt {
     pub fn insert_item(&mut self, item: &BeltItem) {
         let mut item = item.clone();
         let index = self
-            .get_segment_index_for_position(item.position)
+            .get_segment_index_for_position(item.position, false)
             .expect(&format!(
                 "Somehow item not on any segment {} - {:?}",
                 item.position, self.segments
@@ -161,35 +161,65 @@ impl ConveyorBelt {
         None
     }
 
-    pub fn get_segment_index_for_position(&self, position: Vec3) -> Option<usize> {
+    pub fn get_segment_index_for_position(
+        &self,
+        position: Vec3,
+        include_connector: bool,
+    ) -> Option<usize> {
         for i in 0..self.segments.len() {
             let segment = &self.segments[i];
-            if segment.is_connector {
+            if !include_connector && segment.is_connector {
                 continue;
             };
             if segment.point_on_segment(position) {
                 return Some(i);
             }
         }
+
+        // for (i, segment) in self.segments.iter().rev().enumerate() {
+        //     if !include_connector && segment.is_connector {
+        //         if !include_connector && segment.is_connector {
+        //             continue;
+        //         };
+        //     }
+        //     if segment.point_on_segment(position) {
+        //         return Some(i);
+        //     }
+        // }
+
         None
     }
 
-    pub fn has_space_at_position(&self, position: Vec3, item_size: f32) -> bool {
-        let Some(i) = self.get_segment_index_for_position(position) else {
+    pub fn has_space_at_position(
+        &self,
+        position: Vec3,
+        item_size: f32,
+        ignored_entity: Option<Entity>,
+    ) -> bool {
+        let Some(i) = self.get_segment_index_for_position(position, false) else {
             info!("no index found for position {}", position);
             return false;
         };
+        let segment = &self.segments[i];
+        let item_width_progress = item_size / segment.length();
+        let progress = segment.progress_for_point(position);
         for item in self.items.iter() {
-            if item.segment_index < i {
-                continue;
-            };
-            if item.segment_index > i {
-                return true;
-            };
-
-            if item.position.distance_squared(position) < (item_size * item_size) {
+            if let Some(ignored) = ignored_entity {
+                if ignored == item.item_entity {
+                    continue;
+                }
+            }
+            // if item.segment_index < i {
+            //     continue;
+            // };
+            // if item.segment_index > i {
+            //     return true;
+            // };
+            if i == item.segment_index
+                && (progress - item.segment_progress).abs() < item_width_progress
+            {
                 return false;
-            };
+            }
         }
 
         true

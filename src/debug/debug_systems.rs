@@ -142,7 +142,7 @@ pub fn debug_draw_conveyors(
                 shapes.color = PINK_600.into();
                 shapes.thickness = 0.1;
                 shapes.hollow = false;
-                shapes.transform = Transform::from_translation(segment.start_position + offset)
+                shapes.transform = Transform::from_translation(segment.start_position() + offset)
                     .with_rotation(Quat::from_rotation_x(TAU * 0.25));
                 shapes.circle(0.05);
 
@@ -152,14 +152,14 @@ pub fn debug_draw_conveyors(
                     PURPLE.into()
                 };
 
-                shapes.transform = Transform::from_translation(segment.end_position + offset)
+                shapes.transform = Transform::from_translation(segment.end_position() + offset)
                     .with_rotation(Quat::from_rotation_x(TAU * 0.25));
 
                 shapes.circle(0.05);
                 shapes.transform = Transform::from_translation(Vec3::Y * 0.12);
                 shapes.alignment = Alignment::Billboard;
                 shapes.thickness = 0.02;
-                shapes.line(segment.start_position, segment.end_position);
+                shapes.line(segment.start_position(), segment.end_position());
 
                 // for item in &conveyor.items {
                 //     shapes.transform.translation = item.position + Vec3::Y * 0.5;
@@ -218,27 +218,38 @@ pub fn debug_hover_system(
     {
         let up = Vec3::Y * 0.1;
         for segment in &conveyor.segments {
-            let dir = segment.direction;
-            let perp = Vec3::new(-dir.z, 0.0, dir.x).normalize();
-            let offset = perp * 0.25;
-            gizmos.line(
-                segment.start_position + up - offset,
-                segment.end_position + up - offset,
-                ORANGE_400,
-            );
-            gizmos.line(
-                segment.start_position + up + offset,
-                segment.end_position + up + offset,
+            // let dir = segment.direction;
+            // let perp = Vec3::new(-dir.z, 0.0, dir.x).normalize();
+            // let offset = perp * 0.25;
+            // gizmos.line(
+            //     segment.start_position + up - offset,
+            //     segment.end_position + up - offset,
+            //     ORANGE_400,
+            // );
+            // gizmos.line(
+            //     segment.start_position + up + offset,
+            //     segment.end_position + up + offset,
+            //     ORANGE_400,
+            // );
+            gizmos.rect(
+                Isometry3d {
+                    translation: (segment.start_position()
+                        + segment.direction() * segment.length() * 0.5)
+                        .into(),
+                    rotation: Quat::from_rotation_x(TAU * 0.25),
+                },
+                segment.rect().size(),
                 ORANGE_400,
             );
         }
 
         let up = Vec3::Y * 0.00;
+        let segment_colors = [ORANGE_400, GREEN_400, BLUE_500, PURPLE_600];
         for item in &conveyor.items {
             gizmos.circle(
                 Isometry3d::new(item.position + up, Quat::from_rotation_x(TAU * 0.25)),
                 0.05,
-                RED_500,
+                segment_colors[item.segment_index % segment_colors.len()],
             );
         }
         commands.entity(entity).with_children(|commands| {
@@ -251,7 +262,7 @@ pub fn debug_hover_system(
                 },
             ));
             commands.spawn((
-                Text(format!("segments: {}", conveyor.belt_pieces.len())),
+                Text(format!("segments: {}", conveyor.segments.len())),
                 TextFont {
                     font: general_assets.default_font.clone(),
                     font_size: 10.0,
@@ -270,7 +281,14 @@ pub fn debug_hover_system(
 
             for (i, item) in conveyor.items.iter().enumerate() {
                 commands.spawn((
-                    Text(format!("i: {} p:{:.2}", i, item.segment_progress)),
+                    Text(format!(
+                        "i: {:>3} s:{} - p:{:.2} - {} {}",
+                        i,
+                        item.segment_index,
+                        item.segment_progress,
+                        item.position,
+                        item.item_entity
+                    )),
                     TextFont {
                         font: general_assets.default_font.clone(),
                         font_size: 10.0,

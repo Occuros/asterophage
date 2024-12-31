@@ -25,7 +25,7 @@ pub fn place_building_system(
     if game_cursor.preview_entity.is_none() {
         return;
     };
-    if !input.just_pressed(MouseButton::Left) {
+    if !input.pressed(MouseButton::Left) {
         return;
     }
     let grid_size = world_grid.grid_size;
@@ -134,7 +134,10 @@ pub fn respond_to_conveyor_belt_placement_event(
         };
 
         let conveyor_belt = ConveyorBelt::spawn_new(&mut commands, belt_piece);
-        let mut belt_element = belt_q.get_mut(building_placed.entity).unwrap();
+        let mut belt_element = belt_q.get_mut(building_placed.entity).expect(&format!(
+            "the placed building entity exists as a belt element {:?}",
+            building_placed
+        ));
         belt_element.conveyor_belt = Some(conveyor_belt);
         conveyor_placed_event.send(ConveyorPlacedEvent {
             entity: conveyor_belt,
@@ -198,6 +201,9 @@ pub fn respond_to_belt_element_removal(
                 belt_pieces: after[..].to_vec(),
                 ..default()
             };
+            if (conveyor_belt.belt_pieces.len() == 0) {
+                error!("this is very unexpected {:?}", conveyor.belt_pieces);
+            }
             let new_conveyor_entity = commands.spawn(conveyor_belt).id();
 
             for belt in after.iter() {
@@ -221,6 +227,14 @@ pub fn handle_conveyor_placement_system(
         let conveyor = conveyor_q.get(conveyor_placement.entity).unwrap();
         let message = format!("conveyor belt got placed {:?}", conveyor);
         info!("{}", message);
+        if (conveyor.belt_pieces.len() == 0) {
+            let message = format!(
+                "for some reason we got a conveyorbelt placed without any pices inside {:?}",
+                conveyor
+            );
+            error!("{}", message);
+            continue;
+        }
         let belt_transform = transform_q.get(conveyor.belt_pieces[0].entity).unwrap();
         let mut primary_conveyor_entity = conveyor_placement.entity;
 
@@ -267,8 +281,10 @@ pub fn handle_conveyor_placement_system(
             ) {
                 Some(e) => {
                     primary_conveyor_entity = e;
+                    commands.trigger_targets(ConveyorSegmentsChanged, primary_conveyor_entity);
                 }
                 None => {
+                    commands.trigger_targets(ConveyorSegmentsChanged, next_conveyor_entity);
                     continue;
                 }
             }
@@ -396,9 +412,9 @@ pub fn extract_resources_system(
             let Ok(mut conveyor) = conveyor_q.get_mut(conveyor_entity) else {
                 continue;
             };
-
+            let item_width = 0.2;
             let position = world_grid.grid_to_world(&p);
-            if !conveyor.has_space_at_position(position, 0.2) {
+            if !conveyor.has_space_at_position(position, item_width, None) {
                 continue;
             }
 
@@ -406,7 +422,7 @@ pub fn extract_resources_system(
                 YellowBileItem::spawn(world_grid.grid_to_world(&p), Quat::IDENTITY, &mut shapes);
 
             let index = conveyor
-                .get_segment_index_for_position(position)
+                .get_segment_index_for_position(position, false)
                 .expect(&format!(
                     "Somehow item not on any segment {} - {:?}",
                     position, conveyor.segments
@@ -417,6 +433,7 @@ pub fn extract_resources_system(
                 item_entity,
                 segment_index: index,
                 segment_progress: progress,
+                item_width,
             });
         }
     }

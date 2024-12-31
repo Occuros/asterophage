@@ -27,7 +27,7 @@ impl CloneEntity {
     fn clone_entity(self, world: &mut World) {
         let _ = {
             let registry = world.get_resource::<AppTypeRegistry>().unwrap().read();
-         world
+            world
                 .get_entity(self.source)
                 .unwrap()
                 .archetype()
@@ -41,8 +41,7 @@ impl CloneEntity {
                         .unwrap()
                 })
                 .filter_map(|type_id| {
-                    let type_registry_entry = registry
-                    .get(type_id);
+                    let type_registry_entry = registry.get(type_id);
 
                     match type_registry_entry {
                         Some(r) => {
@@ -52,39 +51,75 @@ impl CloneEntity {
                                 None => {
                                     info!("component is missing reflect {:?}", type_id);
                                     None
-                                },
+                                }
                             }
-                        },
+                        }
                         None => {
-                            info!("reflection missing for {:?}", {type_id});
+                            info!("reflection missing for {:?}", { type_id });
                             None
-                        },
+                        }
                     }
-
-
-
                 })
                 .collect::<Vec<_>>()
         };
-
     }
 }
 
-pub fn find_child_with_name(entity: Entity, name: &str, children_q: &Query<&Children>, name_q: &Query<&Name>) -> Option<Entity> {
-    let Ok(children) =  children_q.get(entity) else { return None};
+pub fn find_child_with_name(
+    entity: Entity,
+    name: &str,
+    children_q: &Query<&Children>,
+    name_q: &Query<&Name>,
+) -> Option<Entity> {
+    let Ok(children) = children_q.get(entity) else {
+        return None;
+    };
     for child in children.iter() {
-
-        if let Ok(child_name) = name_q.get(*child)  {
-
+        if let Ok(child_name) = name_q.get(*child) {
             if child_name.to_string() == name {
-                return Some(*child)
+                return Some(*child);
             }
         }
 
         let child_result = find_child_with_name(*child, name, children_q, name_q);
-        if child_result.is_some() {return child_result}
+        if child_result.is_some() {
+            return child_result;
+        }
     }
 
     None
+}
 
+pub trait RoundExt {
+    fn round_to_places(self, places: u32) -> Self;
+}
+
+impl RoundExt for f32 {
+    fn round_to_places(self, places: u32) -> Self {
+        let factor = 10f32.powi(places as i32);
+        (self * factor).round() / factor
+    }
+}
+
+impl RoundExt for f64 {
+    fn round_to_places(self, places: u32) -> Self {
+        let factor = 10f64.powi(places as i32);
+        (self * factor).round_custom() / factor
+    }
+}
+
+pub trait RoundBeltExt {
+    fn round_custom(self) -> Self;
+}
+
+impl RoundBeltExt for f32 {
+    fn round_custom(self) -> Self {
+        self.round_to_places(2)
+    }
+}
+
+impl RoundBeltExt for f64 {
+    fn round_custom(self) -> Self {
+        self.round_to_places(2)
+    }
 }

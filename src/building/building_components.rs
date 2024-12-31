@@ -1,3 +1,4 @@
+use crate::utilities::utility_methods::RoundBeltExt;
 use crate::world_grid::world_gird_components::*;
 use bevy::color::palettes::css::YELLOW;
 use bevy::prelude::TimerMode::Repeating;
@@ -22,7 +23,7 @@ pub struct Preview {}
 #[derive(Default, Reflect, Component)]
 pub struct Active {}
 
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct BuildingPlacedEvent {
     pub building_type: BuildingType,
     pub grid_position: GridPosition,
@@ -114,7 +115,7 @@ impl Extractor {
                     building_type: BuildingType::Extractor,
                 },
                 Extractor {
-                    timer: Timer::new(Duration::from_secs_f32(3.0), Repeating),
+                    timer: Timer::new(Duration::from_secs_f32(0.50), Repeating),
                 },
                 RequiresGround {
                     allowed_ground: vec![
@@ -235,82 +236,115 @@ impl Inserter {
 
 #[derive(Debug, Reflect, Clone)]
 pub struct ConveyorSegment {
-    pub start_position: Vec3,
-    pub end_position: Vec3,
-    pub direction: Dir3,
-    pub length: f32,
+    start_position: Vec3,
+    end_position: Vec3,
+    direction: Dir3,
+    length: f32,
     pub is_connector: bool,
+    rect: Rect,
 }
 
 impl Default for ConveyorSegment {
     fn default() -> Self {
-        let line = Vec3::X - Vec3::ZERO;
-
-        Self {
-            start_position: Vec3::ZERO,
-            end_position: Vec3::X,
-            length: line.length(),
-            direction: Dir3::new(line).unwrap(),
-            is_connector: false,
-        }
+        Self::new(Vec3::ZERO, Vec3::X)
     }
 }
 
 impl ConveyorSegment {
+    pub fn start_position(&self) -> Vec3 {
+        self.start_position
+    }
+
+    pub fn end_position(&self) -> Vec3 {
+        self.end_position
+    }
+
+    pub fn length(&self) -> f32 {
+        self.length
+    }
+
+    pub fn direction(&self) -> Dir3 {
+        self.direction
+    }
+
+    pub fn rect(&self) -> Rect {
+        self.rect
+    }
+
+    pub fn set_start_position(&mut self, start_position: Vec3) {
+        *self = Self::new(start_position, self.end_position);
+    }
+
+    pub fn set_end_position(&mut self, end_position: Vec3) {
+        *self = Self::new(self.start_position, end_position);
+    }
+
     pub fn new(start_position: Vec3, end_position: Vec3) -> Self {
-        let line = end_position - start_position;
+        let direction = Dir3::new(end_position - start_position).unwrap();
+        let length = (end_position - start_position).length();
+        let horizontal = direction.x != 0.0;
+        let center = start_position + direction * length * 0.5;
+
+        let segment_width = 0.01;
+        let size = if horizontal {
+            Vec2::new(length, segment_width)
+        } else {
+            Vec2::new(segment_width, length)
+        };
         Self {
             start_position,
             end_position,
-            direction: Dir3::new(line).unwrap(),
-            length: line.length(),
-            ..default()
+            length,
+            direction,
+            is_connector: false,
+            rect: Rect::from_center_size(center.xz(), size),
         }
     }
     pub fn point_on_segment(&self, point: Vec3) -> bool {
-        let start = self.start_position;
-        let end = self.end_position;
-        let width = 0.25;
-        // Vector from start to end
-        let ab = end - start;
-        // Length of the segment
-        let ab_length = ab.length();
-        // Unit vector in the direction of ab
-        let ab_unit = ab / ab_length;
-
-        // Perpendicular vector to ab in the XZ plane
-        let perp = Vec3::new(-ab_unit.z, 0.0, ab_unit.x);
-
-        // Half-width vector
-        let half_width_vector = perp * (width / 2.0);
-
-        // Define the four corners of the rectangle
-        let corner1 = start + half_width_vector;
-        let corner2 = start - half_width_vector;
-        let corner3 = end + half_width_vector;
-        let corner4 = end - half_width_vector;
-
-        // Vectors from point to each corner
-        let ap = point - corner1;
-        let bp = point - corner2;
-        let cp = point - corner3;
-        let dp = point - corner4;
-
-        // Calculate cross products to determine if point is on the correct side of each edge
-        let cross1 = ab_unit.cross(ap);
-        let cross2 = ab_unit.cross(bp);
-        let cross3 = ab_unit.cross(cp);
-        let cross4 = ab_unit.cross(dp);
-
-        // Check if point is within the parallel lines defined by the rectangle's width
-        let within_width = cross1.y * cross2.y <= 0.0 && cross3.y * cross4.y <= 0.0;
-
-        // Check if point is within the length of the rectangle
-        let dot1 = ab_unit.dot(ap);
-        let dot2 = ab_unit.dot(bp);
-        let within_length = dot1 >= 0.0 && dot1 <= ab_length && dot2 >= 0.0 && dot2 <= ab_length;
-
-        within_width && within_length
+        self.rect.contains(point.xz())
+        // let start = self.start_position;
+        // let end = self.end_position;
+        // let width = 0.25;
+        // // Vector from start to end
+        // let ab = end - start;
+        // // Length of the segment
+        // let ab_length = ab.length();
+        // // Unit vector in the direction of ab
+        // let ab_unit = ab / ab_length;
+        //
+        // // Perpendicular vector to ab in the XZ plane
+        // let perp = Vec3::new(-ab_unit.z, 0.0, ab_unit.x);
+        //
+        // // Half-width vector
+        // let half_width_vector = perp * (width / 2.0);
+        //
+        // // Define the four corners of the rectangle
+        // let corner1 = start + half_width_vector;
+        // let corner2 = start - half_width_vector;
+        // let corner3 = end + half_width_vector;
+        // let corner4 = end - half_width_vector;
+        //
+        // // Vectors from point to each corner
+        // let ap = point - corner1;
+        // let bp = point - corner2;
+        // let cp = point - corner3;
+        // let dp = point - corner4;
+        //
+        // // Calculate cross products to determine if point is on the correct side of each edge
+        // let cross1 = ab_unit.cross(ap);
+        // let cross2 = ab_unit.cross(bp);
+        // let cross3 = ab_unit.cross(cp);
+        // let cross4 = ab_unit.cross(dp);
+        //
+        // // Check if point is within the parallel lines defined by the rectangle's width
+        // let within_width = cross1.y * cross2.y <= 0.0 && cross3.y * cross4.y <= 0.0;
+        //
+        // // Check if point is within the length of the rectangle
+        // let dot1 = ab_unit.dot(ap);
+        // let dot2 = ab_unit.dot(bp);
+        // let within_length = dot1 >= 0.0 && dot1 <= ab_length && dot2 >= 0.0 && dot2 <= ab_length;
+        //
+        // within_width && within_length
     }
 
     pub fn progress_for_point(&self, point: Vec3) -> f32 {
@@ -318,8 +352,11 @@ impl ConveyorSegment {
         let point_vector = point - self.start_position;
 
         let projection = point_vector.dot(segment_vector) / segment_vector.length_squared();
+        if projection > 1.0 {
+            warn!("progress is larger than the segment {}", projection)
+        }
 
-        projection.clamp(0.0, 1.0)
+        projection.clamp(0.0, 1.0).round_custom()
     }
 
     pub fn position_for_progress(&self, progress: f32) -> Vec3 {
@@ -333,6 +370,7 @@ pub struct BeltItem {
     pub position: Vec3,
     pub segment_progress: f32,
     pub segment_index: usize,
+    pub item_width: f32,
 }
 
 #[derive(Reflect, Clone, Copy, Debug)]
