@@ -23,151 +23,39 @@ pub fn conveyor_system(
     if *is_paused {
         return;
     }
-
     for (entity, conveyor) in q_conveyor.iter_mut() {
         let conveyor = conveyor.into_inner();
         let segments = &mut conveyor.segments;
         let segments_length = segments.len();
-        let mut segment_blocked_progress = vec![1.0; segments_length];
+        let mut next_spot = vec![1.0; segments_length];
 
         for item in &mut conveyor.items {
             let segment = &segments[item.segment_index];
             let previous_progress = item.segment_progress;
-            let previous_index = item.segment_index;
+            let last_segment_index = segments_length - 1;
+            let mut reached_next_belt = false;
 
             item.segment_progress += (conveyor.belt_speed * time.delta_secs() / segment.length());
-            item.segment_progress.round_custom();
-            let item_width_progress = (item.item_width / segment.length()).round_custom();
-
-            // If progress exceeds 1.0, move to the next segment
-            if item.segment_progress >= segment_blocked_progress[item.segment_index] {
-                let next_segment_progress = item.segment_progress - 1.0;
-                if item.segment_index == segments_length - 1 {
-                    // info!("we reached end of segment {}", item.item_entity);
-                    item.segment_progress = segment_blocked_progress[item.segment_index];
-                    if (conveyor.connected_conveyor_belt.is_some()) {
-                        segment_blocked_progress[item.segment_index] -= item_width_progress;
-                        item.position = segment.end_position();
-                        commands.trigger_targets(
-                            ItemReachedOtherBeltTrigger {
-                                belt_item: item.clone(),
-                                next_conveyor: conveyor.connected_conveyor_belt.unwrap(),
-                            },
-                            entity,
-                        );
-                        continue;
-                    }
-                }
-                // if item.segment_progress > 1.0 {
-                //     error!(
-                //         "Segment progress was way to fast! {}",
-                //         item.segment_progress
-                //     )
-                // }
-
-                let next_segment_index = item.segment_index + 1;
-                let max_progress = segment_blocked_progress[item.segment_index];
-                // info!(
-                //     "segment stuff: {} {} {:?}",
-                //     next_segment_index,
-                //     item.segment_progress,
-                //     segment_blocked_progress.get(next_segment_index),
-                // );
-
-                if next_segment_index < segments_length
-                    && next_segment_progress > 0.0
-                    && next_segment_progress < segment_blocked_progress[next_segment_index]
-                {
-                    item.segment_index = next_segment_index;
-                    item.segment_progress = next_segment_progress;
-                    // info!("reached next segment: {}", item.item_entity)
-                } else if item.segment_progress >= max_progress {
-                    // info!(
-                    //     "we should block at {} - c:{} p:{} -> b:{}",
-                    //     item.item_entity,
-                    //     item.segment_progress,
-                    //     previous_progress,
-                    //     segment_blocked_progress[item.segment_index],
-                    // );
-                    item.segment_progress = previous_progress;
-                    segment_blocked_progress[item.segment_index] =
-                        previous_progress - item_width_progress;
-                } else {
-                    info!(
-                        "we weren't blocked at {} - {} -> {}",
-                        item.item_entity,
-                        item.segment_progress,
-                        segment_blocked_progress[item.segment_index],
-                    );
-                }
-                // Check if we have reached the end of the path
-                // if item.segment_index == segments_length - 1 && item.segment_progress >= 1.0 {
-                //     if (conveyor.connected_conveyor_belt.is_some()) {
-                //         commands.trigger_targets(
-                //             ItemReachedOtherBeltTrigger {
-                //                 belt_item: item.clone(),
-                //                 next_conveyor: conveyor.connected_conveyor_belt.unwrap(),
-                //             },
-                //             entity,
-                //         );
-                //     }
-                // }
+            item.segment_progress = item.segment_progress.clamp(0.0, 1.0);
+            let item_width_progress = (item.item_width / segment.length());
+            if next_spot[item.segment_index] >= 0.0 {
+                item.segment_progress = item.segment_progress.min(next_spot[item.segment_index]);
+                next_spot[item.segment_index] = item.segment_progress - item_width_progress;
+            } else {
+                item.segment_progress = previous_progress;
             }
 
-            // let segment = &segments[item.segment_index];
-            //
-            // // Update start and end position for the next segment
-            // // start_position = segment.start_position;
-            // // end_position = segment.end_position;
-            // // Check for overlapping and update blocked progress in the current segment
-            // let max_progress_index = item.segment_index;
-            // let max_progress = segment_blocked_progress[max_progress_index];
-            // if item.segment_progress >= max_progress {
-            //     if item.segment_index == previous_index {
-            //         segment_blocked_progress[item.segment_index] =
-            //             previous_progress - item_width_progress;
-            //     } else {
-            //         segment_blocked_progress[previous_index] =
-            //             previous_progress - item_width_progress;
-            //     }
-            //
-            //     // If blocked, revert to previous progress
-            //     item.segment_progress = previous_progress;
-            //     item.segment_index = previous_index;
-            //
-            //     // info!(
-            //     //     "{} max progress {}:{} new progress: {};{}",
-            //     //     item.item_entity,
-            //     //     max_progress_index,
-            //     //     max_progress,
-            //     //     item.segment_index,
-            //     //     item.segment_progress
-            //     // );
-            //
-            //     if (item.segment_progress < item_width_progress) {
-            //         let diff = item_width_progress - item.segment_progress;
-            //         segment_blocked_progress[item.segment_index - 1] = 1.0 - diff;
-            //     }
-            // }
-
-            // if (item.segment_index == segments.len() - 1
-            //     && item.segment_progress == 1.0
-            //     && conveyor.connected_conveyor_belt.is_some())
-            // {
-            //     commands.trigger_targets(
-            //         ItemReachedOtherBeltTrigger {
-            //             belt_item: item.clone(),
-            //             next_conveyor: conveyor.connected_conveyor_belt.unwrap(),
-            //         },
-            //         entity,
-            //     );
-            // }
-
-            let position = segment.position_for_progress(item.segment_progress);
-
-            if let Ok((mut item_transform, _)) = transform_q.get_mut(item.item_entity) {
-                item_transform.translation = position + Vec3::Y * 0.3;
-                item.position = position;
+            if item.segment_progress == 1.0 {
+                if item.segment_index == last_segment_index {
+                    reached_next_belt = conveyor.connected_conveyor_belt.is_some();
+                } else {
+                    let next_segment = &segments[item.segment_index + 1];
+                    let next_segment_item_width_progress =
+                        (item.item_width / next_segment.length());
+                    onveyor: conveyor.connected_conveyor_belt.unwrap(),
+                },
+                entity,
+                );
             }
         }
     }
